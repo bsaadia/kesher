@@ -8,7 +8,7 @@ import os
 import asyncio
 from app.config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def db_session():
     # Use in-memory SQLite for tests
     engine = create_engine("sqlite:///:memory:")

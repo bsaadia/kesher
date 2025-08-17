@@ -90,3 +90,23 @@ def test_get_messages_within_timestamp_range(db_session):
 
     assert len(messages_in_range) == 2
     assert all(msg.text in [text1, text2] for msg in messages_in_range)
+
+# test batch adding messages
+def test_batch_add_messages(db_session):
+    storage = MessageStorage(db_session)
+    
+    messages = [
+        Message(timestamp=datetime.now(), text="batch message 1", channel="test channel"),
+        Message(timestamp=datetime.now(), text="batch message 2", channel="test channel")
+    ]
+
+    added_messages = storage.batch_add_messages(messages)
+
+    # check if the messages were added correctly
+    assert len(added_messages) == 2
+    assert all(msg.text.startswith("batch message") for msg in added_messages)
+
+    # verify that they can be retrieved
+    all_messages = storage.get_all_messages()
+    assert len(all_messages) >= 2
+    assert all(msg in all_messages for msg in added_messages)

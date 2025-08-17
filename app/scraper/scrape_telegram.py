@@ -1,6 +1,8 @@
 from telethon import TelegramClient
 from datetime import datetime, timezone
 from typing import List, Dict
+from models.db import MessageStorage
+from sqlalchemy.orm import Session
 
 import asyncio
 from bidi.algorithm import get_display
@@ -56,7 +58,7 @@ async def fetch_past_messages(client: TelegramClient, channel: str, limit: int=1
             })
     return messages
 
-async def fetch_messages_in_date_range(client, channel, start_date, end_date):
+async def fetch_messages_in_date_range(client: TelegramClient, channel: str, start_date: datetime, end_date: datetime) -> List[Dict[str, str]]:
     """
     Asynchronously fetches messages from a Telegram channel within a specified date range.
 
@@ -87,43 +89,11 @@ async def fetch_messages_in_date_range(client, channel, start_date, end_date):
                 })
     return messages
 
-# async def query_channel_messages(channel_username, start_date, end_date):
-#     client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
-    
-#     await client.start(phone=TELEGRAM_PHONE)
-    
-#     messages = []
-#     async with client.takeout() as takeout:
-#         count = 0
-#         async for message in takeout.iter_messages(
-#             channel_username,
-#             offset_date=end_date
-#         ):
-#             count += 1
-#             print(f"Message {count}: {message.date}")
-            
-#             if message.date < start_date:
-#                 break
-#             if start_date <= message.date <= end_date:
-#                 messages.append({
-#                     'id': message.id,
-#                     'date': message.date,
-#                     'text': message.text,
-#                     'sender_id': message.sender_id
-#                 })
-    
-#     await client.disconnect()
-#     return messages
-
-# # Usage
-# async def main():
-#     channel = '@idf_telegram'
-#     start = datetime(2025, 8, 13, tzinfo=timezone.utc)
-#     end = datetime(2025, 8, 13, 23, 59, 59, tzinfo=timezone.utc)
-    
-#     messages = await query_channel_messages(channel, start, end)
-    
-#     print(get_display(msg['text']))
-
-# if __name__ == '__main__':
-#     asyncio.run(main())
+def save_messages_to_db(db_session: Session, messages: List[Dict[str, str]]) -> None:
+    storage = MessageStorage(db_session)
+    for message in messages:
+        timestamp = message['date']
+        text = get_display(message['text']) if message['text'] else ''
+        channel = message['sender_id']
+        storage.add_message(timestamp=timestamp, text=text, channel=channel)
+    print("Saved messages to database.")

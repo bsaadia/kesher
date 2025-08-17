@@ -28,6 +28,11 @@ class MessageStorage():
     def delete_message(self, message: Message):
         self.session.delete(message)
         self.session.commit()
+    
+    def batch_add_messages(self, messages: List[Message]) -> List[Message]:
+        self.session.add_all(messages)
+        self.session.commit()
+        return messages
         
     def close(self):
         self.session.close()
