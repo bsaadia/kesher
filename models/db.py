@@ -4,9 +4,6 @@ from models.message import Base, Message, engine
 from typing import List, Optional
 from datetime import datetime
 
-# Create tables
-Base.metadata.create_all(engine)
-
 class MessageStorage():
     def __init__(self, session):
         self.session = session
