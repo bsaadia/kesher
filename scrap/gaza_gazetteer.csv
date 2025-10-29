@@ -1,82 +1,84 @@
-﻿hebrew_name,type
-ח'אן יונס,place
-רפיח,place
-עבאסן אל-כבירה,place
-בני סוהילה,place
-ח'וזעה,place
-עבאסן אל-סע'ירה,place
-אל-נסר,place
-בית לאהיא,place
-אום א-נאסר,place
-בית חאנון,place
-עזה,place
-אל-קובה,place
-אל-בורייג',place
-דיר אל-בלאח,place
-אל-מוע'ראקה,place
-אל-קרארה,place
-א-זאוואידה,place
-ג'באליה,place
-ואדי א-סלקה,place
-ג'וחור א-דיק,place
-א-זהראא,place
-שוקת א-סופי,place
-ואדי א-סלקא,place
-אל-מוסדר,place
-אל-מע'אזי,place
-נוסיראת,place
-אל-פוח'ארי,place
-אל-מַוַ֫ואסִי,place
-אל-באיוכ,place
-אום אל-כלאב,place
-רצועת עזה - ישראל,admin_boundary
-גבול מצרים - הרשות הפלסטינית,admin_boundary
-אל-כראמה,admin_boundary
-נחל הבשור,admin_boundary
-גבול רצועת עזה - ישראל,admin_boundary
-שארע אלשעפ,admin_boundary
-ישראל - מצרים,admin_boundary
-רצועת עזה,admin_boundary
-ישראל,admin_boundary
-מצרים,admin_boundary
-מועצה אזורית אשכול,admin_boundary
-מועצה אזורית חוף אשקלון,admin_boundary
-מחוז הדרום,admin_boundary
-מועצה אזורית שדות נגב,admin_boundary
-מועצה אזורית שער הנגב,admin_boundary
-צפון סיני,admin_boundary
-נפה עזה,admin_boundary
-תל אל-הווא,admin_boundary
-סברה,admin_boundary
-שייח' רד'ואן,admin_boundary
-נפת דיר אל-בלח,admin_boundary
-נפת חאן יונס,admin_boundary
-נפת צפון עזה,admin_boundary
-נפת רפיח,admin_boundary
-בית חאנון,admin_boundary
-בית לאהיא,admin_boundary
-אום א-נאסר,admin_boundary
-ג'באליה,admin_boundary
-א-זהראא,admin_boundary
-עזה,admin_boundary
-ג'וחור א-דיק,admin_boundary
-אל-מוע'ראקה,admin_boundary
-אל-נסר,admin_boundary
-רפיח,admin_boundary
-שוקת א-סופי,admin_boundary
-ח'אן יונס,admin_boundary
-דיר אל-בלאח,admin_boundary
-א-זאוואידה,admin_boundary
-נוסיראת,admin_boundary
-אל-קרארה,admin_boundary
-ואדי א-סלקא,admin_boundary
-אל-מע'אזי,admin_boundary
-אל-בורייג',admin_boundary
-אל-מוסדר,admin_boundary
-עבסאן אל-סע'ירה,admin_boundary
-עבאסן אל-כבירה,admin_boundary
-אל-פוח'ארי,admin_boundary
-בני סוהילה,admin_boundary
-ח'וזאעה,admin_boundary
-נפת באר שבע,admin_boundary
-נפת אשקלון,admin_boundary
+﻿name_he,name_en,type
+ח'אן יונס,Khan Yunis,place
+רפיח,Rafah,place
+עבאסן אל-כבירה,Abasan al-Kabira,place
+בני סוהילה,Bani Suheila,place
+ח'וזעה,Khuza'a,place
+עבאסן אל-סע'ירה,Abasan al-Saghira,place
+אל-נסר,Al-Nasr,place
+בית לאהיא,Beit Lahiya,place
+אום א-נאסר,Um a-Nasser,place
+בית חאנון,Beit Hanoun,place
+עזה,Gaza,place
+אל-קובה,Al-Qubbah,place
+אל-בורייג',Bureij,place
+דיר אל-בלאח,Deir el-Balah,place
+אל-מוע'ראקה,Al-Mughraqa,place
+אל-קרארה,al-Qarara,place
+א-זאוואידה,Az-Zawayda,place
+ג'באליה,Jabalia,place
+ואדי א-סלקה,Am Dhair,place
+ג'וחור א-דיק,Juhor a-Dik,place
+א-זהראא,Az-Zahra,place
+שוקת א-סופי,Shokat a-Sufi,place
+ואדי א-סלקא,Wadi a-Salqa,place
+אל-מוסדר,al-Musaddar,place
+אל-מע'אזי,al-Maghazi,place
+נוסיראת,Nuseirat,place
+אל-פוח'ארי,al-Fukhari,place
+אל-מַוַ֫ואסִי,Al-Mawasi,place
+אל-באיוכ,Al Bayuk,place
+אום אל-כלאב,Umm al-Kilab,place
+רצועת עזה - ישראל,Gaza Strip - Israel,admin_boundary
+גבול מצרים - הרשות הפלסטינית,Border Egypt - Palestinian territories,admin_boundary
+אל-כראמה,al-Karama,admin_boundary
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary
+שארע אלשעפ,Al-Sha'af,admin_boundary
+ישראל - מצרים,Egypt - Israel,admin_boundary
+גבול רצועת עזה - ישראל,Border Gaza Strip – Israel,admin_boundary
+גבול מצרים - הרשות הפלסטינית,Water border Egypt – Palestinian Territories,admin_boundary
+רצועת עזה,Gaza Strip,admin_boundary
+ישראל,Israel,admin_boundary
+מצרים,Egypt,admin_boundary
+מועצה אזורית אשכול,Eshkol Regional Council,admin_boundary
+מועצה אזורית חוף אשקלון,Hof Ashkelon Regional Council,admin_boundary
+מחוז הדרום,South District,admin_boundary
+מועצה אזורית שדות נגב,Sdot Negev Regional Council,admin_boundary
+מועצה אזורית שער הנגב,Shaar HaNegev Regional Council,admin_boundary
+צפון סיני,North Sinai,admin_boundary
+נפה עזה,Gaza Governorate,admin_boundary
+תל אל-הווא,Tal al Hawa,admin_boundary
+סברה,Sabra,admin_boundary
+שייח' רד'ואן,Sheik Radwan,admin_boundary
+נפת דיר אל-בלח,Deir al-Balah Governorate,admin_boundary
+נפת חאן יונס,Khan Yunis Governorate,admin_boundary
+נפת צפון עזה,North Gaza Governorate,admin_boundary
+נפת רפיח,Rafah Governorate,admin_boundary
+בית חאנון,Beit Hanoun,admin_boundary
+בית לאהיא,Beit Lahiya,admin_boundary
+אום א-נאסר,Um a-Nasser,admin_boundary
+ג'באליה,Jabalia,admin_boundary
+א-זהראא,Az-Zahra,admin_boundary
+עזה,Gaza,admin_boundary
+ג'וחור א-דיק,Juhor a-Dik,admin_boundary
+אל-מוע'ראקה,al-Mughraqa,admin_boundary
+אל-נסר,Al-Nasr,admin_boundary
+רפיח,Rafah,admin_boundary
+שוקת א-סופי,Shokat aa-Sufi,admin_boundary
+ח'אן יונס,Khan Yunis,admin_boundary
+דיר אל-בלאח,Deir el-Balah,admin_boundary
+א-זאוואידה,a-Zawayda,admin_boundary
+נוסיראת,Nuseirat,admin_boundary
+אל-קרארה,al-Qarara,admin_boundary
+ואדי א-סלקא,Wadi a-Salqa,admin_boundary
+אל-מע'אזי,al-Maghazi,admin_boundary
+אל-בורייג',Bureij,admin_boundary
+אל-מוסדר,al-Musaddar,admin_boundary
+עבסאן אל-סע'ירה,'Abasan al-Saghira,admin_boundary
+עבאסן אל-כבירה,Abasan al-Kabira,admin_boundary
+אל-פוח'ארי,Al-Fukhari,admin_boundary
+בני סוהילה,Bani Suheila,admin_boundary
+ח'וזאעה,Khuza'a,admin_boundary
+נפת באר שבע,Beersheba Subdistrict,admin_boundary
+נפת אשקלון,Ashkelon Subdistrict,admin_boundary

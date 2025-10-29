@@ -16,20 +16,22 @@ admins = ox.features_from_polygon(gaza.geometry.iloc[0], admin_tags)
 places = places.reset_index()
 admins = admins.reset_index()
 
-places["hebrew_name"] = places["name:he"]
-admins["hebrew_name"] = admins["name:he"]
-
+places["name_he"] = places["name:he"]
+admins["name_he"] = admins["name:he"]
+places["name_en"] = places["name:en"]
+admins["name_en"] = admins["name:en"]
 # Step 5: Add type column
 places["type"] = "place"
 admins["type"] = "admin_boundary"
 
 # Step 6: Merge
-gazetteer = pd.concat([places[["hebrew_name", "type"]],
-                       admins[["hebrew_name", "type"]]],
+columns_to_keep = ["name_he", "name_en", "type"]
+gazetteer = pd.concat([places[columns_to_keep],
+                       admins[columns_to_keep]],
                       ignore_index=True)
 
 # Drop rows without Hebrew names and remove duplicates
-gazetteer = gazetteer.dropna(subset=["hebrew_name"]).drop_duplicates()
+gazetteer = gazetteer.dropna(subset=["name_he"]).drop_duplicates()
 
 # Step 7: Save to CSV
 gazetteer.to_csv("scrap/gaza_gazetteer.csv", index=False, encoding="utf-8-sig")
