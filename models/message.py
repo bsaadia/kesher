@@ -1,11 +1,9 @@
 from sqlalchemy import String, DateTime
-from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped
+from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy import create_engine
+from models.base import Base
 
 engine = create_engine("sqlite:///db.sqlite3") # create the engine
-
-class Base(DeclarativeBase):
-    pass
 
 class Message(Base):
     __tablename__ = "messages"

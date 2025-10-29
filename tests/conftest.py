@@ -2,7 +2,9 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from models.message import Base
+from models.message import Base, Message
+from models.location import Location
+from datetime import datetime
 from telethon import TelegramClient
 import os
 import asyncio
@@ -33,3 +35,27 @@ async def telegram_client(request):
     finally:
         if client.is_connected():
             await client.disconnect()
+
+@pytest.fixture
+def message_factory(db_session):
+    def _create(**kwargs):
+        defaults = {"text": "test message", "timestamp": datetime.utcnow(), "channel": "test"}
+        defaults.update(kwargs)
+        msg = Message(**defaults)
+        db_session.add(msg)
+        db_session.commit()
+        db_session.refresh(msg)
+        return msg
+    return _create
+
+@pytest.fixture
+def location_factory(db_session):
+    def _create(**kwargs):
+        defaults = {"name_he": "מיקום בדיקה", "name_en": "Test Location"}
+        defaults.update(kwargs)
+        loc = Location(**defaults)
+        db_session.add(loc)
+        db_session.commit()
+        db_session.refresh(loc)
+        return loc
+    return _create

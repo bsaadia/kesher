@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from typing import List, Dict
 from models.db import MessageStorage
 from sqlalchemy.orm import Session
-
 import asyncio
 from bidi.algorithm import get_display
 from app.config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
@@ -97,3 +96,17 @@ def save_messages_to_db(db_session: Session, messages: List[Dict[str, str]]) -> 
         channel = message['sender_id']
         storage.add_message(timestamp=timestamp, text=text, channel=channel)
     print("Saved messages to database.")
+
+async def get_messages_since(client: TelegramClient, channel: str, last_id: int) -> List[Dict[str, str]]:
+    """
+    Fetches messages from a Telegram channel since a specific message ID.
+
+    Args:
+        client: An instance of the Telegram client.
+        channel: The identifier (username, ID, or entity) of the Telegram channel to fetch messages from.
+        last_id (int): The ID of the last message to start fetching from.
+
+    Returns:
+        list: A list of dictionaries, each containing the 'id', 'date', 'text', and 'sender_id' of a message.
+    """
+    pass
