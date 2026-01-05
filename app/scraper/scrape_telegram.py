@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 import asyncio
 from bidi.algorithm import get_display
 from app.config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
+import csv
 # from models.db import MessageStorage
 # from models.message import Message
 
@@ -96,6 +97,25 @@ def save_messages_to_db(db_session: Session, messages: List[Dict[str, str]]) -> 
         channel = message['sender_id']
         storage.add_message(timestamp=timestamp, text=text, channel=channel)
     print("Saved messages to database.")
+    
+def export_messages_to_csv(messages: List[Dict[str, str]], filename: str) -> None:
+    with open(filename, mode='w', newline='', encoding='utf-8') as csvfile:
+        fieldnames = ['id', 'date', 'text', 'sender_id']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for message in messages:
+            writer.writerow(message)
+    print(f"Exported {len(messages)} messages to {filename}.")
+
+def export_messages_to_txt(messages: List[Dict[str, str]], filename: str) -> None:
+    with open(filename, mode='w', encoding='utf-8') as textfile:
+        for message in messages:
+            textfile.write(f"ID: {message['id']}\n")
+            textfile.write(f"Date: {message['date']}\n")
+            textfile.write(f"Text: {message['text']}\n")
+            textfile.write("\n")
+    print(f"Exported {len(messages)} messages to {filename}.")
 
 async def get_messages_since(client: TelegramClient, channel: str, last_id: int) -> List[Dict[str, str]]:
     """
