@@ -11,3 +11,5 @@ class Location(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name_he: Mapped[str] = mapped_column(String)
     name_en: Mapped[str] = mapped_column(String)
+    lat: Mapped[float] = mapped_column(nullable=False)
+    lon: Mapped[float] = mapped_column(nullable=False)

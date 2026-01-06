@@ -14,3 +14,4 @@ SQLAlchemy==2.0.43
 Telethon==1.40.0
 tomli==2.2.1
 typing_extensions==4.13.2
+pandas==2.3.3

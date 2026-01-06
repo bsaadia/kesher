@@ -51,7 +51,7 @@ def message_factory(db_session):
 @pytest.fixture
 def location_factory(db_session):
     def _create(**kwargs):
-        defaults = {"name_he": "מיקום בדיקה", "name_en": "Test Location"}
+        defaults = {"name_he": "מיקום בדיקה", "name_en": "Test Location", "lat": 1.0, "lon": 1.0}
         defaults.update(kwargs)
         loc = Location(**defaults)
         db_session.add(loc)

@@ -11,7 +11,9 @@ def test_location_creation(db_session):
     # Test basic model creation
     location = Location(
         name_he="מיקום בדיקה",
-        name_en="Test Location"
+        name_en="Test Location",
+        lat=1.0,
+        lon=1.0
     )
     
     db_session.add(location)
@@ -25,7 +27,9 @@ def test_location_creation(db_session):
 def test_location_query(db_session):
     location = Location(
         name_he="מיקום בדיקה",
-        name_en="Test Location"
+        name_en="Test Location",
+        lat=1.0,
+        lon=1.0
     )
     
     db_session.add(location)

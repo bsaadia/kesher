@@ -28,7 +28,15 @@ def load_gazetteer_to_db_if_empty(db_session: Session):
         gazetteer_data = pd.read_csv(GAZETTEER_PATH).to_dict(orient="records")
 
         for loc in gazetteer_data:
-            location = Location(name_he=loc["name_he"], name_en=loc["name_en"])
+            if pd.isna(loc.get("lat")) or pd.isna(loc.get("lon")):
+                continue
+
+            location = Location(
+                name_he=loc["name_he"], 
+                name_en=loc["name_en"],
+                lat=loc["lat"],
+                lon=loc["lon"]
+            )
             db_session.add(location)
 
         db_session.commit()

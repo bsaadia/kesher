@@ -1,84 +1,117 @@
-﻿name_he,name_en,type
-ח'אן יונס,Khan Yunis,place
-רפיח,Rafah,place
-עבאסן אל-כבירה,Abasan al-Kabira,place
-בני סוהילה,Bani Suheila,place
-ח'וזעה,Khuza'a,place
-עבאסן אל-סע'ירה,Abasan al-Saghira,place
-אל-נסר,Al-Nasr,place
-בית לאהיא,Beit Lahiya,place
-אום א-נאסר,Um a-Nasser,place
-בית חאנון,Beit Hanoun,place
-עזה,Gaza,place
-אל-קובה,Al-Qubbah,place
-אל-בורייג',Bureij,place
-דיר אל-בלאח,Deir el-Balah,place
-אל-מוע'ראקה,Al-Mughraqa,place
-אל-קרארה,al-Qarara,place
-א-זאוואידה,Az-Zawayda,place
-ג'באליה,Jabalia,place
-ואדי א-סלקה,Am Dhair,place
-ג'וחור א-דיק,Juhor a-Dik,place
-א-זהראא,Az-Zahra,place
-שוקת א-סופי,Shokat a-Sufi,place
-ואדי א-סלקא,Wadi a-Salqa,place
-אל-מוסדר,al-Musaddar,place
-אל-מע'אזי,al-Maghazi,place
-נוסיראת,Nuseirat,place
-אל-פוח'ארי,al-Fukhari,place
-אל-מַוַ֫ואסִי,Al-Mawasi,place
-אל-באיוכ,Al Bayuk,place
-אום אל-כלאב,Umm al-Kilab,place
-רצועת עזה - ישראל,Gaza Strip - Israel,admin_boundary
-גבול מצרים - הרשות הפלסטינית,Border Egypt - Palestinian territories,admin_boundary
-אל-כראמה,al-Karama,admin_boundary
-נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary
-גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary
-שארע אלשעפ,Al-Sha'af,admin_boundary
-ישראל - מצרים,Egypt - Israel,admin_boundary
-גבול רצועת עזה - ישראל,Border Gaza Strip – Israel,admin_boundary
-גבול מצרים - הרשות הפלסטינית,Water border Egypt – Palestinian Territories,admin_boundary
-רצועת עזה,Gaza Strip,admin_boundary
-ישראל,Israel,admin_boundary
-מצרים,Egypt,admin_boundary
-מועצה אזורית אשכול,Eshkol Regional Council,admin_boundary
-מועצה אזורית חוף אשקלון,Hof Ashkelon Regional Council,admin_boundary
-מחוז הדרום,South District,admin_boundary
-מועצה אזורית שדות נגב,Sdot Negev Regional Council,admin_boundary
-מועצה אזורית שער הנגב,Shaar HaNegev Regional Council,admin_boundary
-צפון סיני,North Sinai,admin_boundary
-נפה עזה,Gaza Governorate,admin_boundary
-תל אל-הווא,Tal al Hawa,admin_boundary
-סברה,Sabra,admin_boundary
-שייח' רד'ואן,Sheik Radwan,admin_boundary
-נפת דיר אל-בלח,Deir al-Balah Governorate,admin_boundary
-נפת חאן יונס,Khan Yunis Governorate,admin_boundary
-נפת צפון עזה,North Gaza Governorate,admin_boundary
-נפת רפיח,Rafah Governorate,admin_boundary
-בית חאנון,Beit Hanoun,admin_boundary
-בית לאהיא,Beit Lahiya,admin_boundary
-אום א-נאסר,Um a-Nasser,admin_boundary
-ג'באליה,Jabalia,admin_boundary
-א-זהראא,Az-Zahra,admin_boundary
-עזה,Gaza,admin_boundary
-ג'וחור א-דיק,Juhor a-Dik,admin_boundary
-אל-מוע'ראקה,al-Mughraqa,admin_boundary
-אל-נסר,Al-Nasr,admin_boundary
-רפיח,Rafah,admin_boundary
-שוקת א-סופי,Shokat aa-Sufi,admin_boundary
-ח'אן יונס,Khan Yunis,admin_boundary
-דיר אל-בלאח,Deir el-Balah,admin_boundary
-א-זאוואידה,a-Zawayda,admin_boundary
-נוסיראת,Nuseirat,admin_boundary
-אל-קרארה,al-Qarara,admin_boundary
-ואדי א-סלקא,Wadi a-Salqa,admin_boundary
-אל-מע'אזי,al-Maghazi,admin_boundary
-אל-בורייג',Bureij,admin_boundary
-אל-מוסדר,al-Musaddar,admin_boundary
-עבסאן אל-סע'ירה,'Abasan al-Saghira,admin_boundary
-עבאסן אל-כבירה,Abasan al-Kabira,admin_boundary
-אל-פוח'ארי,Al-Fukhari,admin_boundary
-בני סוהילה,Bani Suheila,admin_boundary
-ח'וזאעה,Khuza'a,admin_boundary
-נפת באר שבע,Beersheba Subdistrict,admin_boundary
-נפת אשקלון,Ashkelon Subdistrict,admin_boundary
+﻿name_he,name_en,type,lat,lon
+ח'אן יונס,Khan Yunis,place,31.3443293,34.3095897
+רפיח,Rafah,place,31.2752047,34.2558269
+עבאסן אל-כבירה,Abasan al-Kabira,place,31.3238491,34.3497101
+בני סוהילה,Bani Suheila,place,31.3401107,34.3222778
+ח'וזעה,Khuza'a,place,31.3073177,34.3584366
+עבאסן אל-סע'ירה,Abasan al-Saghira,place,31.3406062,34.344497
+אל-נסר,Al-Nasr,place,31.2822097,34.3058009
+בית לאהיא,Beit Lahiya,place,31.54977,34.5024697
+אום א-נאסר,Um a-Nasser,place,31.5570345,34.5204468
+בית חאנון,Beit Hanoun,place,31.539022,34.5384182
+עזה,Gaza,place,31.5128679,34.4581358
+אל-קובה,Al-Qubbah,place,31.4800692,34.4649619
+אל-בורייג',Bureij,place,31.4418553,34.4032131
+דיר אל-בלאח,Deir el-Balah,place,31.4183455,34.3502476
+אל-מוע'ראקה,Al-Mughraqa,place,31.4672522,34.4097598
+אל-קרארה,al-Qarara,place,31.3782508,34.3355147
+א-זאוואידה,Az-Zawayda,place,31.4280377,34.3653001
+ג'באליה,Jabalia,place,31.5282137,34.4831674
+ואדי א-סלקה,Am Dhair,place,31.4000485,34.3381461
+ג'וחור א-דיק,Juhor a-Dik,place,31.4576339,34.4422566
+א-זהראא,Az-Zahra,place,31.4734963,34.4018182
+שוקת א-סופי,Shokat a-Sufi,place,31.2588686,34.2820547
+ואדי א-סלקא,Wadi a-Salqa,place,31.3833596,34.3649665
+אל-מוסדר,al-Musaddar,place,31.4149835,34.3763663
+אל-מע'אזי,al-Maghazi,place,31.4217012,34.3847246
+נוסיראת,Nuseirat,place,31.4490893,34.3930673
+אל-פוח'ארי,al-Fukhari,place,31.2977948,34.3203002
+אל-מַוַ֫ואסִי,Al-Mawasi,place,31.3550656,34.2610942
+אל-באיוכ,Al Bayuk,place,31.2603615,34.2982274
+אום אל-כלאב,Umm al-Kilab,place,31.2890768,34.293378
+רצועת עזה - ישראל,Gaza Strip - Israel,admin_boundary,31.24046397815077,34.295740891090865
+גבול מצרים - הרשות הפלסטינית,Border Egypt - Palestinian territories,admin_boundary,31.23545894674517,34.261913388525315
+אל-כראמה,al-Karama,admin_boundary,31.509825245644624,34.50699884482765
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.435859913611655,34.418364027201285
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.454396762898174,34.456483017704215
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.558534651248454,34.54279593050527
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.46189019231073,34.465096898343766
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.5053637109881,34.52824634076334
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.49341746380174,34.50270941989951
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.460163899999998,34.401339449999995
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.45977184342206,34.40182799266834
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.465269013355442,34.39877689566691
+אל-כראמה,al-Karama,admin_boundary,31.50443733304802,34.49334492446028
+אל-כראמה,al-Karama,admin_boundary,31.508777632151247,34.49908543294796
+אל-כראמה,al-Karama,admin_boundary,31.495181949240123,34.48499612093948
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.438894845163013,34.438145442082195
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.381641405967553,34.37624958492362
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.270561148052533,34.33754242390484
+שארע אלשעפ,Al-Sha'af,admin_boundary,31.50646289581953,34.471524225462396
+ישראל - מצרים,Egypt - Israel,admin_boundary,31.21039477130658,34.270898718372024
+גבול רצועת עזה - ישראל,Border Gaza Strip – Israel,admin_boundary,31.56787203699364,34.53021439276892
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.530946600667704,34.5560850820314
+גבול רצועת עזה - ישראל,Border Gaza Strip – Israel,admin_boundary,31.58371218279649,34.50754914002861
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.474319748954432,34.47745032518901
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.465404425035704,34.3864955521906
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.457999481045547,34.40872026871599
+גבול מצרים - הרשות הפלסטינית,Border Egypt - Palestinian territories,admin_boundary,31.288335755305823,34.2397218949226
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.406088072223355,34.398810233834745
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.3956090475833,34.387412747841275
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.362285008663875,34.36717159550812
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.42086513932551,34.41907630417388
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.412348919561595,34.40696106041777
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.32885841549722,34.36960913718134
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.340893435628125,34.36768302936008
+גבול רצועת עזה - ישראל,Border Gaza Strip - Israel,admin_boundary,31.29950809185148,34.36649479213584
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.451774444698255,34.413271545742745
+גבול מצרים - הרשות הפלסטינית,Water border Egypt – Palestinian Territories,admin_boundary,31.3248462,34.21734615
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.463809914531286,34.37563080716553
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.46161669229322,34.40032525610052
+נחל הבשור,Valley of Gaza (Wadi Ghazza),admin_boundary,31.463817654987785,34.37614798263275
+גבול רצועת עזה - ישראל,Border Gaza Strip – Israel,admin_boundary,31.5953697,34.4904123
+שארע אלשעפ,Al-Sha'af,admin_boundary,31.506003140450474,34.472321119225555
+רצועת עזה,Gaza Strip,admin_boundary,31.407959722620063,34.37613782709766
+ישראל,Israel,admin_boundary,31.59424898306494,34.9663984715011
+מצרים,Egypt,admin_boundary,26.57929846327896,30.08709551990666
+מועצה אזורית אשכול,Eshkol Regional Council,admin_boundary,31.227331814575543,34.42941641818993
+מועצה אזורית חוף אשקלון,Hof Ashkelon Regional Council,admin_boundary,31.635278735656396,34.60380011989857
+מחוז הדרום,South District,admin_boundary,30.83929571117634,34.87023695383967
+מועצה אזורית שדות נגב,Sdot Negev Regional Council,admin_boundary,31.421890391034854,34.55904303315019
+מועצה אזורית שער הנגב,Shaar HaNegev Regional Council,admin_boundary,31.50931388189982,34.616411703189534
+צפון סיני,North Sinai,admin_boundary,30.530440787507374,33.67461844690535
+נפה עזה,Gaza Governorate,admin_boundary,31.489730864251307,34.44423829976589
+תל אל-הווא,Tal al Hawa,admin_boundary,31.504040468713733,34.435338312920365
+סברה,Sabra,admin_boundary,31.507873482940884,34.449489320526595
+שייח' רד'ואן,Sheik Radwan,admin_boundary,31.53193781437692,34.469359178908974
+נפת דיר אל-בלח,Deir al-Balah Governorate,admin_boundary,31.421455958361054,34.37049944242774
+נפת חאן יונס,Khan Yunis Governorate,admin_boundary,31.33770970105631,34.31747263672227
+נפת צפון עזה,North Gaza Governorate,admin_boundary,31.54547717387116,34.50849114445089
+נפת רפיח,Rafah Governorate,admin_boundary,31.28353589708625,34.2713366777826
+בית חאנון,Beit Hanoun,admin_boundary,31.53633520948738,34.540308413989216
+בית לאהיא,Beit Lahiya,admin_boundary,31.563753678030128,34.49457525540896
+אום א-נאסר,Um a-Nasser,admin_boundary,31.56020793424402,34.52276560949488
+ג'באליה,Jabalia,admin_boundary,31.528498656494108,34.49463476522572
+א-זהראא,Az-Zahra,admin_boundary,31.475220782542465,34.394665561167024
+עזה,Gaza,admin_boundary,31.501301085799184,34.452984220489164
+ג'וחור א-דיק,Juhor a-Dik,admin_boundary,31.45285157993562,34.436490180000575
+אל-מוע'ראקה,al-Mughraqa,admin_boundary,31.465380100879162,34.412102216010645
+אל-נסר,Al-Nasr,admin_boundary,31.28685060440206,34.298270939664924
+רפיח,Rafah,admin_boundary,31.299905326122232,34.25649480876445
+שוקת א-סופי,Shokat aa-Sufi,admin_boundary,31.254379915624384,34.2912695563862
+ח'אן יונס,Khan Yunis,admin_boundary,31.34544213745873,34.2943755246648
+דיר אל-בלאח,Deir el-Balah,admin_boundary,31.40790995677332,34.34556237728433
+א-זאוואידה,a-Zawayda,admin_boundary,31.43422300906447,34.36403552417791
+נוסיראת,Nuseirat,admin_boundary,31.45249718436138,34.38556000327241
+אל-קרארה,al-Qarara,admin_boundary,31.37045669497773,34.34523207704104
+ואדי א-סלקא,Wadi a-Salqa,admin_boundary,31.388651003957037,34.36384607686962
+אל-מע'אזי,al-Maghazi,admin_boundary,31.422241761913458,34.39216406084311
+אל-בורייג',Bureij,admin_boundary,31.43310503136017,34.40736768103657
+אל-מוסדר,al-Musaddar,admin_boundary,31.411970091695995,34.38396366149071
+עבסאן אל-סע'ירה,'Abasan al-Saghira,admin_boundary,31.341753230168063,34.35358678294592
+עבאסן אל-כבירה,Abasan al-Kabira,admin_boundary,31.318521435865488,34.34754778105009
+אל-פוח'ארי,Al-Fukhari,admin_boundary,31.284899576523916,34.32934867631307
+בני סוהילה,Bani Suheila,admin_boundary,31.341286369646316,34.33014096451292
+ח'וזאעה,Khuza'a,admin_boundary,31.300082188042463,34.35987664650531
+נפת באר שבע,Beersheba Subdistrict,admin_boundary,30.762576113299573,34.884535877139086
+נפת אשקלון,Ashkelon Subdistrict,admin_boundary,31.61491464054179,34.72567785958602
