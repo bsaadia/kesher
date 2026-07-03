@@ -10,14 +10,15 @@ from sqlalchemy.exc import IntegrityError, StatementError
 def test_message_creation(db_session):
     # Test basic model creation
     message = Message(
+        telegram_id=1,
         timestamp=datetime.now(),
         text="Test message",
         channel="general"
     )
-    
+
     db_session.add(message)
     db_session.commit()
-    
+
     assert message.id is not None
     assert message.text == "Test message"
     assert message.channel == "general"
@@ -25,6 +26,7 @@ def test_message_creation(db_session):
 # Test querying messages from database
 def test_message_query(db_session):
     message = Message(
+        telegram_id=2,
         timestamp=datetime.now(),
         text="Test message",
         channel="general"
@@ -58,6 +60,7 @@ def test_message_null(db_session):
 def test_message_datatypes(db_session):
     
     message = Message(
+        telegram_id=3,
         timestamp="not a datetime object",
         text="Test message",
         channel="general"
@@ -72,6 +75,7 @@ def test_message_datatypes(db_session):
 # Test filtering by timestamp
 def test_message_filtering_by_time(db_session):
     message = Message(
+        telegram_id=4,
         timestamp=datetime(2025, 8, 13),
         text="Test message",
         channel="general"

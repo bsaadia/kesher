@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tzahal Mapper</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #map { height: 100%; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([31.35, 34.30], 11);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    Promise.all([
+      fetch('/locations').then(r => r.json()),
+      fetch('/associations').then(r => r.json())
+    ]).then(([locations, associations]) => {
+      const counts = {};
+      for (const a of associations) {
+        counts[a.location_id] = (counts[a.location_id] || 0) + 1;
+      }
+
+      const locationMap = {};
+      for (const loc of locations) {
+        locationMap[loc.id] = loc;
+      }
+
+      // Deduplicate gazetteer entries by Hebrew name (same name = same place)
+      const grouped = {};
+      for (const [locId, count] of Object.entries(counts)) {
+        const loc = locationMap[locId];
+        if (!loc) continue;
+        const key = loc.name_he;
+        if (!grouped[key]) {
+          grouped[key] = { loc, count: 0 };
+        }
+        grouped[key].count += count;
+      }
+
+      for (const { loc, count } of Object.values(grouped)) {
+        const radius = Math.min(8 + count * 1.5, 40);
+        L.circleMarker([loc.lat, loc.lon], {
+          radius,
+          color: '#8B0000',
+          fillColor: '#c0392b',
+          fillOpacity: 0.65,
+          weight: 1.5
+        })
+        .bindPopup(`<b>${loc.name_en}</b><br><span dir="rtl">${loc.name_he}</span><br>${count} message${count !== 1 ? 's' : ''}`)
+        .addTo(map);
+      }
+    });
+  </script>
+</body>
+</html>

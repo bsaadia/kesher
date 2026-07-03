@@ -4,10 +4,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from models.message import Base, Message
 from models.location import Location
+from models.associations import MessageLocation
 from datetime import datetime
 from telethon import TelegramClient
 import os
 import asyncio
+from unittest.mock import patch
+from app import create_app
 from app.config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
 
 @pytest.fixture(scope="function")
@@ -38,8 +41,16 @@ async def telegram_client(request):
 
 @pytest.fixture
 def message_factory(db_session):
+    counter = {"n": 0}
+
     def _create(**kwargs):
-        defaults = {"text": "test message", "timestamp": datetime.utcnow(), "channel": "test"}
+        counter["n"] += 1
+        defaults = {
+            "telegram_id": counter["n"],
+            "text": "test message",
+            "timestamp": datetime.utcnow(),
+            "channel": "test",
+        }
         defaults.update(kwargs)
         msg = Message(**defaults)
         db_session.add(msg)
@@ -59,3 +70,26 @@ def location_factory(db_session):
         db_session.refresh(loc)
         return loc
     return _create
+
+@pytest.fixture
+def association_factory(db_session):
+    def _create(message, location):
+        assoc = MessageLocation(message_id=message.id, location_id=location.id)
+        db_session.add(assoc)
+        db_session.commit()
+        return assoc
+    return _create
+
+@pytest.fixture
+def client(db_session):
+    """
+    Create a Flask test client.
+    We patch 'app.Session' so that the Flask app uses the test database session
+    instead of creating a new one connected to the production DB.
+    """
+    with patch('app.Session', return_value=db_session):
+        app = create_app()
+        app.config['TESTING'] = True
+        
+        with app.test_client() as client:
+            yield client

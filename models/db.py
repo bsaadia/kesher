@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from models.message import Base, Message, engine
+from models.base import Base, engine
+from models.message import Message
 from typing import List, Optional
 from datetime import datetime
 
@@ -8,8 +9,8 @@ class MessageStorage():
     def __init__(self, session):
         self.session = session
     
-    def add_message(self, timestamp: str, text: str, channel: str) -> Message:
-        message = Message(timestamp=timestamp, text=text, channel=channel)
+    def add_message(self, telegram_id: int, timestamp: str, text: str, channel: str) -> Message:
+        message = Message(telegram_id=telegram_id, timestamp=timestamp, text=text, channel=channel)
         self.session.add(message)
         self.session.commit()
         return message

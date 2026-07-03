@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Message Activity by Front — Ridgeline</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.5rem 2rem 0.75rem;
+      border-bottom: 1px solid #222;
+    }
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    header a {
+      font-size: 0.8rem;
+      color: #888;
+      text-decoration: none;
+      margin-top: 0.25rem;
+      display: inline-block;
+    }
+    header a:hover { color: #ccc; }
+    #chart-container {
+      padding: 2rem;
+      overflow-x: auto;
+    }
+    #chart {
+      display: block;
+      margin: 0 auto;
+    }
+    .axis text { fill: #888; font-size: 11px; }
+    .axis line, .axis path { stroke: #333; }
+    .x-axis .domain { display: none; }
+    .channel-label {
+      fill: #ccc;
+      font-size: 12px;
+      font-weight: 500;
+      text-anchor: end;
+      dominant-baseline: middle;
+    }
+    #loading {
+      text-align: center;
+      padding: 4rem;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Message Activity by Front</h1>
+    <a href="/">← Map</a>
+  </header>
+  <div id="chart-container">
+    <div id="loading">Loading…</div>
+    <svg id="chart"></svg>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script>
+    fetch('/ridgeline-data')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('loading').remove();
+        renderRidgeline(data);
+      })
+      .catch(err => {
+        document.getElementById('loading').textContent = 'Error loading data.';
+        console.error(err);
+      });
+
+    function renderRidgeline(data) {
+      if (!data.length) {
+        document.getElementById('loading').textContent = 'No data available.';
+        return;
+      }
+
+      const parseTime = d3.isoParse;
+
+      // Parse timestamps and collect channels
+      data.forEach(d => { d.date = parseTime(d.timestamp); });
+      data = data.filter(d => d.date);
+
+      const channels = Array.from(new Set(data.map(d => d.front))).sort();
+
+      // Bin by day per front
+      const grouped = d3.group(data, d => d.front);
+
+      // Find global date extent
+      const [minDate, maxDate] = d3.extent(data, d => d.date);
+
+      // Build weekly bins per front — literal counts, no smoothing
+      const weekStarts = d3.timeWeek.range(
+        d3.timeWeek.floor(minDate),
+        d3.timeWeek.offset(d3.timeWeek.ceil(maxDate), 1)
+      );
+      const binner = d3.bin()
+        .domain([weekStarts[0], weekStarts[weekStarts.length - 1]])
+        .thresholds(weekStarts);
+
+      const series = channels.map(ch => {
+        const msgs = grouped.get(ch) || [];
+        const bins = binner(msgs.map(d => d.date));
+        return { channel: ch, bins };
+      });
+
+      // Sort by total volume descending so busiest fronts are at the top
+      series.sort((a, b) => d3.sum(b.bins, d => d.length) - d3.sum(a.bins, d => d.length));
+
+      // Layout constants
+      const totalWidth = Math.max(900, window.innerWidth - 80);
+      const marginLeft = 180;
+      const marginRight = 30;
+      const marginTop = 20;
+      const marginBottom = 40;
+      const rowHeight = 90;
+      const totalHeight = marginTop + channels.length * rowHeight + marginBottom;
+
+      const svg = d3.select('#chart')
+        .attr('width', totalWidth)
+        .attr('height', totalHeight);
+
+      const chartWidth = totalWidth - marginLeft - marginRight;
+
+      // X scale covers the full binned range
+      const xScale = d3.scaleTime()
+        .domain([weekStarts[0], weekStarts[weekStarts.length - 1]])
+        .range([0, chartWidth]);
+
+      // Each front gets its own y scale so tall fronts don't dwarf small ones
+      const yScales = new Map(series.map(s => [
+        s.channel,
+        d3.scaleLinear()
+          .domain([0, d3.max(s.bins, b => b.length) || 1])
+          .range([0, rowHeight * 0.85])
+          .clamp(true)
+      ]));
+
+      // Color scale
+      const color = d3.scaleOrdinal()
+        .domain(channels)
+        .range(d3.schemeTableau10);
+
+      const g = svg.append('g')
+        .attr('transform', `translate(${marginLeft},${marginTop})`);
+
+      // Step-function area and line — each horizontal segment = one week's exact count
+      const makeArea = yScale => d3.area()
+        .x(b => xScale(b.x0))
+        .y0(0)
+        .y1(b => -yScale(b.length))
+        .curve(d3.curveStep);
+
+      const makeLine = yScale => d3.line()
+        .x(b => xScale(b.x0))
+        .y(b => -yScale(b.length))
+        .curve(d3.curveStep);
+
+      // Draw rows top-to-bottom in sorted order (no overlap)
+      series.forEach((s, i) => {
+        const yOffset = marginTop + i * rowHeight + rowHeight;
+        const yScale = yScales.get(s.channel);
+        const area = makeArea(yScale);
+        const line = makeLine(yScale);
+
+        const row = g.append('g')
+          .attr('transform', `translate(0, ${yOffset})`);
+
+        // Subtle row background
+        row.append('rect')
+          .attr('x', 0).attr('width', chartWidth)
+          .attr('y', -rowHeight).attr('height', rowHeight)
+          .attr('fill', i % 2 === 0 ? '#141414' : '#111');
+
+        // Baseline
+        row.append('line')
+          .attr('x1', 0).attr('x2', chartWidth)
+          .attr('y1', 0).attr('y2', 0)
+          .attr('stroke', '#2a2a2a')
+          .attr('stroke-width', 1);
+
+        // Area fill
+        row.append('path')
+          .datum(s.bins)
+          .attr('d', area)
+          .attr('fill', color(s.channel))
+          .attr('fill-opacity', 0.3);
+
+        // Step outline
+        row.append('path')
+          .datum(s.bins)
+          .attr('d', line)
+          .attr('fill', 'none')
+          .attr('stroke', color(s.channel))
+          .attr('stroke-width', 1.5);
+
+        // Front label (left) + per-front peak annotation
+        const peak = d3.max(s.bins, b => b.length);
+        g.append('text')
+          .attr('class', 'channel-label')
+          .attr('x', -10)
+          .attr('y', yOffset - rowHeight / 2)
+          .attr('dy', '0.35em')
+          .text(s.channel);
+
+        g.append('text')
+          .attr('x', -10)
+          .attr('y', yOffset)
+          .attr('dy', '-0.3em')
+          .attr('text-anchor', 'end')
+          .attr('fill', '#555')
+          .attr('font-size', '10px')
+          .text(`peak ${peak}`);
+      });
+
+      // X axis at bottom — quarterly ticks to avoid compression over the ~3-year span
+      g.append('g')
+        .attr('class', 'axis x-axis')
+        .attr('transform', `translate(0, ${marginTop + series.length * rowHeight})`)
+        .call(
+          d3.axisBottom(xScale)
+            .ticks(d3.timeMonth.every(3))
+            .tickFormat(d3.timeFormat("%b '%y"))
+        )
+        .selectAll('text')
+          .attr('dy', '1em');
+    }
+  </script>
+</body>
+</html>
