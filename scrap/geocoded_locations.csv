@@ -1,0 +1,199 @@
+name_en,name_he,name_ar,front,lat,lon,precision,matched_query
+Gaza City,עזה,غزة,Gaza Strip,31.503844,34.467105,exact,en
+Khan Yunis,חאן יונס,خان يونس,Gaza Strip,31.344329,34.30959,exact,en
+Rafah,רפיח,رفح,Gaza Strip,31.298148,34.26004,exact,en
+Jabalia,ג'באליה,جباليا,Gaza Strip,31.528214,34.483167,exact,en
+Beit Lahia,בית לאהיא,بيت لاهيا,Gaza Strip,31.54977,34.50247,exact,en
+Beit Hanoun,בית חאנון,بيت حانون,Gaza Strip,31.539022,34.538418,exact,en
+Deir al-Balah,דיר אל-בלאח,دير البلح,Gaza Strip,31.418346,34.350248,exact,en
+Al-Bureij,אל-בוריג',البريج,Gaza Strip,31.438198,34.403575,exact,en
+Nuseirat,נוסיראת,النصيرات,Gaza Strip,31.448261,34.393526,exact,en
+Khirbat Ikhza'a,ח'רבת אחזעה,خزاعة,Gaza Strip,31.307318,34.358437,exact,ar
+Al-Mawasi,אל-מוואסי,المواسي,Gaza Strip,31.37854,34.308608,exact,en
+Al-Maghazi,אל-מע'אזי,المغازي,Gaza Strip,31.422716,34.38641,exact,en
+Rimal,רימאל,الرمال,Gaza Strip,31.516805,34.437488,exact,ar
+Shejaiya,שג'אעיה,الشجاعية,Gaza Strip,31.497973,34.472645,exact,ar
+Zeytoun,זייתון,الزيتون,Gaza Strip,31.487904,34.444542,exact,ar
+Sheikh Radwan,שיח' רדואן,الشيخ رضوان,Gaza Strip,31.532192,34.466769,exact,en
+Daraj Tuffah,דרג' תופאח,الدرج والتفاح,Gaza Strip,,,unresolved,
+Sheikh Ejlin,שיח' עג'לין,الشيخ عجلين,Gaza Strip,31.504492,34.423736,exact,ar
+Al-Amal,אל-אמל,الأمل,Gaza Strip,31.374117,34.335654,fallback,en_broad
+Al-Furqan,אל-פורקאן,الفرقان,Gaza Strip,31.514176,34.426257,exact,ar
+Bakshi,בקשי,بخشى,Gaza Strip,,,unresolved,
+Hamad,חמד,حمد,Gaza Strip,31.376218,34.319276,exact,en
+Al-Karara,אל-קרארה,القرارة,Gaza Strip,31.378251,34.335515,exact,en
+Abasan,עבסנים,عبسان,Gaza Strip,31.323849,34.34971,exact,en
+Al-Mughraqa,אל-מועארקה,المغراقة,Gaza Strip,31.467252,34.40976,exact,en
+Tel al-Sultan,תל אל-סלטאן,تل السلطان,Gaza Strip,,,unresolved,
+Sabra,צברא,الصبرة,Gaza Strip,31.507151,34.451923,exact,en
+Sheikh Zayed,שיח' זאיד,الشيخ زايد,Gaza Strip,31.538139,34.507812,fallback,en_broad
+Al-Jalaa,אל-ג'לאא,الجلاء,Gaza Strip,31.521031,34.458694,exact,en
+Al-Salam,אל-סלאם,السلام,Gaza Strip,31.421846,34.348148,exact,en
+Al-Nur,אל-נור,النور,Gaza Strip,31.359496,34.322446,fallback,en_broad
+Tel al-Zaatar,תל אל-זעתר,تل الزعتر,Gaza Strip,,,unresolved,
+Ezbet Mlin,עזבת מלין,عزبة ملين,Gaza Strip,31.525809,34.491884,exact,ar
+Al-Rodha,אל-רוצ'ה,الروضة,Gaza Strip,31.332757,34.322426,exact,ar
+Al-Nozha,אל-נזהה,النزهة,Gaza Strip,,,unresolved,
+Al-Jaran,אל-ג'רן,الجرن,Gaza Strip,,,unresolved,
+Al-Nahda,אל-נהצ'ה,النهضة,Gaza Strip,31.252448,34.300711,exact,en
+Al-Zahur,אל-זהור,الزهور,Gaza Strip,,,unresolved,
+Al-Atatra,אל-עטאטרה,العطاطرة,Gaza Strip,31.296083,34.290752,exact,ar
+Officer's Neighbourhood,שכונת הקצינים,حي الضباط,Gaza Strip,,,unresolved,
+Jenin,ג'נין,جنين,Judea & Samaria,32.461884,35.297566,exact,en
+Nablus,שכם,نابلس,Judea & Samaria,32.220532,35.256937,exact,en
+Tulkarm,טול כרם,طولكرم,Judea & Samaria,32.311147,35.02755,exact,en
+Hebron,חברון,الخليل,Judea & Samaria,31.528902,35.094487,exact,en
+Ramallah,רמאללה,رام الله,Judea & Samaria,31.897801,35.192422,exact,en
+Jericho,יריחו,أريحا,Judea & Samaria,31.856048,35.459824,exact,en
+Bethlehem,בית לחם,بيت لحم,Judea & Samaria,31.704356,35.206188,exact,en
+Nur al-Shams,נור א-שמס,نور شمس,Judea & Samaria,32.317134,35.058522,exact,en
+Aqabat Jaber,עקבת ג'אבר,عقبة جبر,Judea & Samaria,31.836229,35.440618,exact,en
+Al-Amari,אלעמרי,الأمعري,Judea & Samaria,31.895401,35.209471,exact,en
+Jalazone,ג'ילזון,الجلزون,Judea & Samaria,31.951476,35.211558,exact,en
+Ein Beit Ilma,עין בית אילמא,عين بيت الماء,Judea & Samaria,,,unresolved,
+Fara'a,פרעה,الفارعة,Judea & Samaria,32.39265,35.273668,exact,en
+Shuafat,שועפאט,شعفاط,Judea & Samaria,31.810764,35.23521,fallback,en_broad
+Al-Fawwar,אל-פוואר,الفوار,Judea & Samaria,31.473473,35.070546,exact,en
+Kfar Qatanna,קטנה,قطنة,Judea & Samaria,31.837657,35.121869,exact,ar
+Bala'a,בלעה,بلعا,Judea & Samaria,32.331089,35.111694,exact,en
+Dura,דורא,دورا,Judea & Samaria,31.506598,35.026367,exact,en
+Harmala,הרמלה,حرملة,Judea & Samaria,31.661128,35.211298,exact,en
+Beit Rima,בית רימא,بيت ريما,Judea & Samaria,32.031854,35.104033,exact,en
+Halhul,חלחול,حلحول,Judea & Samaria,31.577547,35.099316,exact,en
+Deir Abu Mash'al,דיר אבו משעל,دير أبو مشعل,Judea & Samaria,31.998813,35.068279,exact,en
+Surif,צוריף,صوريف,Judea & Samaria,31.650401,35.064113,exact,en
+Kfar Qalil,כפר קליל,كفر قليل,Judea & Samaria,32.191681,35.27728,exact,en
+Beit Fajjar,בית פג'ר,بيت فجار,Judea & Samaria,31.623201,35.153869,exact,en
+Beit Kahil,בית כחיל,بيت كاحل,Judea & Samaria,31.570936,35.066311,exact,en
+Qaffin,קפין,قفين,Judea & Samaria,32.433565,35.083489,exact,en
+Al-Fahas,אל פאחס,الفحص,Judea & Samaria,31.509634,35.113755,exact,ar
+Ubeidiya,עובידייה,العبيدية,Judea & Samaria,31.718588,35.276505,exact,en
+Abu Dis,אבו דיס,أبو ديس,Judea & Samaria,31.764235,35.25845,exact,en
+Zatara,זעתרה,زعترة,Judea & Samaria,31.670577,35.257009,exact,ar
+Ein as-Sultan,עין א-סולטאן,عين السلطان,Judea & Samaria,31.870899,35.444006,exact,en
+Nahalin,נחאלין,نحالين,Judea & Samaria,31.685318,35.119318,exact,en
+Rumana,רומאנה,رمانة,Judea & Samaria,32.521848,35.21491,exact,en
+Abu Snina,אבו סנינה,أبو سنينة,Judea & Samaria,31.513261,35.090872,exact,ar
+Al-Khader,אל-ח'אדר,الخضر,Judea & Samaria,31.694731,35.166849,exact,en
+Rantis,רנתיס,رنتيس,Judea & Samaria,32.028745,35.019133,exact,en
+Al-Bireh,אל בירה,البيرة,Judea & Samaria,31.90074,35.211759,exact,en
+Shuqba,שוקבא,شقبا,Judea & Samaria,31.986531,35.039046,exact,en
+Tammun,טמון,طمون,Judea & Samaria,32.28275,35.384776,exact,en
+Doha,דוחה,الدوحة,Judea & Samaria,31.700879,35.179983,exact,en
+Telfit,תלפית,تلفيت,Judea & Samaria,32.403919,35.342908,exact,en
+Sair,סעיר,سعير,Judea & Samaria,31.582929,35.145219,exact,en
+A-Zawaydin,א-זווידין,الزوايدين,Judea & Samaria,,,unresolved,
+Qalqas,קלקס,قلقس,Judea & Samaria,31.493244,35.095795,exact,en
+Bidyah,בידיא,بديا,Judea & Samaria,32.114719,35.075595,exact,ar
+Sabah al-Khair,סבאח אל-ח'יר,صباح الخير,Judea & Samaria,32.487326,35.300109,exact,ar
+Arraba,עראבה,عرابة,Judea & Samaria,32.40461,35.203339,exact,en
+Al-Mughayyir,אל-מוע'ייר,المغير,Judea & Samaria,32.019807,35.346234,exact,en
+Urif,עוריף,عوريف,Judea & Samaria,32.159396,35.225347,exact,ar
+Beit Awwa,בית עווא,بيت عوا,Judea & Samaria,31.506123,34.951585,exact,en
+Beit Anun,בית ענון,بيت عينون,Judea & Samaria,31.577922,35.139237,exact,ar
+Wadi Burqin,ואדי ברוקין,وادي برقين,Judea & Samaria,32.468617,35.280237,exact,en
+Deir Ibzi',דיר איבזיע,دير إبزيع,Judea & Samaria,31.916763,35.122235,exact,en
+Kobar,כובאר,كوبر,Judea & Samaria,31.988674,35.157712,exact,en
+Deir Ammar,דיר עמאר,دير عمار,Judea & Samaria,31.968154,35.097113,exact,en
+Kfar Jamal,כפר ג'מאל,كفر جمال,Judea & Samaria,32.224968,35.044029,exact,ar
+Bazaria,בזאריה,بزاريا,Judea & Samaria,32.306867,35.16399,exact,en
+Zubaidat,זבידאת,زبيدات,Judea & Samaria,32.172488,35.529986,exact,en
+Aqaba,עקבה,عقبة,Judea & Samaria,32.201287,35.035274,exact,en
+Kfar Dan,כפר דאן,كفردان,Judea & Samaria,31.648682,35.114973,exact,en
+Huwwara,חווארה,حوارة,Judea & Samaria,32.145223,35.274975,exact,en
+Khirbat al-Luzia,ח'רבת אל-לוזיה,خربة اللوزية,Judea & Samaria,,,unresolved,
+Dahariya,דאהרייה,الظاهرية,Judea & Samaria,31.407719,34.971016,exact,ar
+Bani Na'im,בני נעים,بني نعيم,Judea & Samaria,31.516871,35.163048,exact,en
+Az-Zababdeh,א-זבאבדה,الزبابدة,Judea & Samaria,32.385757,35.324156,exact,en
+Arrura,ערורה,عارورة,Judea & Samaria,32.041114,35.172598,exact,ar
+Umm Safa,אום צפה,أم صفا,Judea & Samaria,32.008376,35.16589,exact,en
+Mazar'i al-Qibliya,מזרעה אל קבליה,المزرعة القبلية,Judea & Samaria,31.954047,35.16115,exact,ar
+Kibya,קיביא,قبية,Judea & Samaria,31.979426,35.011803,exact,ar
+Fahma,פחמה,فحمة,Judea & Samaria,32.382735,35.179843,exact,en
+Kfar Ni'ma,כפר נעמה,كفر نعمة,Judea & Samaria,31.927202,35.093997,exact,ar
+Attara,עטארה,عطارة,Judea & Samaria,32.003054,35.207213,exact,en
+Ein Umm ash-Sharayit,עין אום אשרייט,أم الشرايط,Judea & Samaria,31.884779,35.211084,exact,ar
+Einas,עינאבוס,عينابوس,Judea & Samaria,32.148139,35.245534,exact,ar
+Burqin,ברוקין,برقين,Judea & Samaria,32.456188,35.260657,exact,en
+Immatin,אימאתין,إماتين,Judea & Samaria,32.188873,35.157369,exact,ar
+Al-Yamun,אל-יאמון,اليامون,Judea & Samaria,32.483853,35.229946,exact,en
+Deir Dibwan,דיר דיבוואן,دير دبوان,Judea & Samaria,31.911341,35.268906,exact,en
+Madama,מדמא,مادما,Judea & Samaria,32.185572,35.231252,exact,en
+Ramon,רמון,رمون,Judea & Samaria,31.931199,35.299858,exact,en
+Al-Lubban,א-לובן,اللبن,Judea & Samaria,32.035111,35.039713,exact,en
+Habla,חבלה,حبلة,Judea & Samaria,32.164016,34.982771,exact,en
+Khirbat al-Marjam,ח'רבת אל מרג'אם,خربة المرجم,Judea & Samaria,,,unresolved,
+Kfar Qud,כפר קוד,كفر قود,Judea & Samaria,32.456819,35.228537,exact,en
+Abush,עבוש,كفر عبوش,Judea & Samaria,32.222208,35.085056,exact,ar
+Funduq,פונדוק,الفندق,Judea & Samaria,32.190216,35.136056,exact,en
+Jaba,ג'בע,جبع,Judea & Samaria,32.32379,35.221598,exact,en
+Beit Sahour,בית סאחור,بيت ساحور,Judea & Samaria,31.702087,35.229739,exact,en
+Um al-Khair,אום אל-חיר,أم الخير,Judea & Samaria,31.432374,35.185575,exact,en
+Fureidis,פורדיס,الفريديس,Judea & Samaria,31.67154,35.244912,exact,en
+Amejun,עמג'ון,أمجون,Judea & Samaria,,,unresolved,
+A-Dik,א-דיק,كفر الديك,Judea & Samaria,32.066284,35.083506,exact,ar
+Izbat Shufa,עזבת שופה,عزبة شوفة,Judea & Samaria,32.281637,35.047835,exact,en
+Beirut,ביירות,بيروت,Lebanon,33.889226,35.502558,exact,en
+Nabatieh,נבטיה,النبطية,Lebanon,33.30791,35.505969,exact,en
+Tyre,צור,صور,Lebanon,33.272121,35.196402,exact,en
+Baalbek,בעלבכ,بعلبك,Lebanon,34.009653,36.21171,exact,en
+Bekaa Valley,הבקעא,سهل البقاع,Lebanon,33.641089,35.732814,exact,en
+Naqoura,א-נקורה,الناقورة,Lebanon,33.118274,35.129825,exact,en
+Ayta ash-Shab,עייתא א-שעב,عيتا الشعب,Lebanon,33.099125,35.340805,exact,en
+Khiam,אל-חיאם,الخيام,Lebanon,33.327223,35.60897,exact,en
+Houla,חולא,حولا,Lebanon,33.210183,35.518734,exact,en
+Yaroun,ירון,يارون,Lebanon,33.083563,35.41669,exact,en
+Hanin,חנין,حنين,Lebanon,33.109004,35.382081,exact,en
+Beit Yahoun,בית יהון,بيت ياحون,Lebanon,33.158183,35.421196,exact,en
+Mays al-Jabal,מיס אל ג'בל,ميس الجبل,Lebanon,33.169953,35.524196,exact,en
+Remiah,רמיה,رامية,Lebanon,33.111136,35.309988,exact,ar
+Bint Jbeil,בינת ג'בל,بنت جبيل,Lebanon,33.119538,35.432793,exact,en
+Maroun al-Ras,מארון א-ראס,مارون الراس,Lebanon,33.080749,35.422287,exact,en
+Aitaroun,עיתרון,عيترون,Lebanon,33.116387,35.471501,exact,en
+Cana,כפר קאנא,قانا,Lebanon,33.809944,35.665415,exact,en
+Blida,בליידא,بليدا,Lebanon,33.136325,35.504601,exact,en
+Marwahin,מרווחין,مروحين,Lebanon,33.108647,35.276736,exact,en
+Rachaiya Al-Foukhar,רשיא אל פוחאר,راشيا الفخار,Lebanon,33.354173,35.667482,exact,en
+Dahieh,דאחייה,الضاحية,Lebanon,33.845257,35.507051,exact,en
+Kfar Kila,כפר כילא,كفركلا,Lebanon,33.282713,35.558755,exact,en
+Tair Harfa,טיר חרפא,طير حرفا,Lebanon,33.126686,35.219131,exact,en
+Al-Jabin,אל-ג'בין,الجبين,Lebanon,33.122137,35.235294,exact,en
+Yater,יעטר,ياطر,Lebanon,33.155463,35.331742,exact,en
+Shuba,כפר שובא,كفرشوبا,Lebanon,33.327666,35.692734,exact,en
+Tsideqin,זבקין,زبقين,Lebanon,33.157044,35.263639,exact,ar
+Al-Matmura,אל-מטמורה,المطمورة,Lebanon,33.107611,35.217478,exact,en
+Labbouneh,לבונה,اللبونة,Lebanon,33.093314,35.148683,exact,en
+Markaba,מרכבא,مركبا,Lebanon,33.231362,35.51768,exact,en
+Shebaa,שבעא,شبعا,Lebanon,33.344475,35.749426,exact,en
+Yarin,יארין,يارين,Lebanon,33.106207,35.2329,exact,en
+Odaisseh,אל עדייסא,العديسة,Lebanon,33.257762,35.546683,exact,en
+Khirbet Selm,ח'רבת סלם,خربة سلم,Lebanon,33.232188,35.419574,exact,en
+Shibriha,שבריחה,شبريحا,Lebanon,33.292102,35.23199,exact,ar
+Burj al-Shemali,בורג' א-שמאלי,برج الشمالي,Lebanon,33.267774,35.236719,exact,en
+Rabb al-Thalathin,רב א-תלתין,رب ثلاثين,Lebanon,,,unresolved,
+Nafakhiyeh,נפח'יה,النفاخية,Lebanon,33.270975,35.386535,exact,ar
+Tebnine,תבנין,تبنين,Lebanon,33.193258,35.4118,exact,en
+Faron,פארון,فرون,Lebanon,33.29684,35.426489,exact,ar
+Muhaibib,מחייביב,محيبيب,Lebanon,33.151179,35.499709,exact,ar
+Ainata,עינתא,عيناتا,Lebanon,34.186753,36.081682,exact,en
+Ni'mat al-Fawqa,נעמת אל-פוקא,نعمات الفوقا,Lebanon,,,unresolved,
+Damascus,דמשק,دمشق,Syria,33.51307,36.309581,exact,en
+Khadar,ח'דר,حضر,Syria,36.541821,40.762138,exact,en
+Tasil,תסיל,تسيل,Syria,32.834625,35.970605,exact,en
+Tadmor,תדמור,تدمر,Syria,34.552661,38.259261,exact,en
+T4,T4,تي فور,Syria,34.516,37.632597,exact,en
+Sana'a,צנעא,صنعاء,Yemen,15.35,44.2,exact,en
+Hodeidah,חודידה,الحديدة,Yemen,14.797868,42.954487,exact,en
+Ras Isa,ראס עיסא,رأس عيسى,Yemen,15.188541,42.662465,exact,en
+Al-Salif,א-סליף,الصليف,Yemen,15.305202,42.670675,exact,en
+Al-Jawf,אל-ג'וף,الجوف,Yemen,16.689733,45.611556,exact,en
+Tehran,טהראן,طهران,Iran,35.689252,51.3896,exact,en
+Kermanshah,כרמנשאה,كرمانشاه,Iran,34.378974,46.701012,exact,en
+Hamadan,המדאן,همدان,Iran,34.97263,48.656382,exact,en
+Isfahan,אצפהאן,أصفهان,Iran,32.670788,51.665,exact,en
+Bushehr,בושהאר,بوشهر,Iran,28.893664,51.320488,exact,en
+Ahvaz,אהווז,الأحواز,Iran,31.323064,48.67932,exact,en
+Yazd,יזד,يزد,Iran,32.040616,54.665719,exact,en
+Dezful,דזפול,دزفول,Iran,32.378026,48.403206,exact,en
+Tabriz,טבריז,تبريز,Iran,38.073861,46.297879,exact,en
+Natanz,נטנז,نطنز,Iran,33.507128,51.913555,exact,en
