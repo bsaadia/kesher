@@ -13,7 +13,11 @@ from app.scraper.scrape_telegram import (
     init_scraper,
     close_scraper,
 )
-from app.processor.processing import load_gazetteer_to_db_if_empty, process_messages_for_locations
+from app.processor.processing import (
+    load_gazetteer_to_db_if_empty,
+    load_activities_to_db_if_empty,
+    process_messages,
+)
 from models.base import engine, Base
 from models.message import Message
 from sqlalchemy.orm import Session
@@ -37,6 +41,7 @@ async def update_database_to_current():
 
     with Session(engine) as session:
         load_gazetteer_to_db_if_empty(session)
+        load_activities_to_db_if_empty(session)
 
         # Highest Telegram message id we already have. NULL/None => empty DB.
         last_id = session.scalar(select(func.max(Message.telegram_id)))
@@ -61,8 +66,8 @@ async def update_database_to_current():
         new_messages = save_messages_to_db(session, scraped_messages)
 
         if new_messages:
-            print(f"Processing {len(new_messages)} new messages for locations...")
-            process_messages_for_locations(session, new_messages)
+            print(f"Processing {len(new_messages)} new messages for locations and activities...")
+            process_messages(session, new_messages)
 
         latest = session.scalar(select(func.max(Message.timestamp)))
         total = session.scalar(select(func.count()).select_from(Message))

@@ -1,0 +1,63 @@
+category,term_he,status
+AIR,תקף,active
+AIR,תקפו,active
+AIR,תקפה,active
+AIR,תקיפה,active
+AIR,תקיפות,active
+AIR,הפציץ,active
+AIR,כלי טיס,active
+AIR,מטוסי קרב,active
+AIR,מטוס קרב,active
+AIR,מל"ט,active
+AIR,טייס מרחוק,active
+GROUND,פשט,active
+GROUND,פשטו,active
+GROUND,פשיטה,active
+GROUND,עצר,active
+GROUND,עצרו,active
+GROUND,מעצר,active
+GROUND,נעצר,active
+GROUND,נעצרו,active
+GROUND,מבוקש,active
+GROUND,מבוקשים,active
+GROUND,איתר,active
+GROUND,איתרו,active
+GROUND,אותר,active
+GROUND,אותרו,active
+GROUND,השמיד,active
+GROUND,השמידו,active
+GROUND,החרים,active
+GROUND,החרימו,active
+GROUND,מנהרה,active
+GROUND,מנהרות,active
+GROUND,מארב,active
+GROUND,מבצע לסיכול טרור,active
+GROUND,צו הריסה,active
+GROUND,צו החרמה,active
+PROJECTILE,ירי,active
+PROJECTILE,שיגור,active
+PROJECTILE,שיגרו,active
+PROJECTILE,רקטה,active
+PROJECTILE,רקטות,active
+PROJECTILE,נפל,active
+PROJECTILE,נפלה,active
+PROJECTILE,אזעקה,active
+PROJECTILE,התרעה,active
+PROJECTILE,יירט,active
+PROJECTILE,יירטו,active
+PROJECTILE,יורט,active
+PROJECTILE,יורטו,active
+CASUALTIES,נפצע,active
+CASUALTIES,נפצעו,active
+CASUALTIES,חילוץ,active
+CASUALTIES,פינוי,active
+CASUALTIES,חטופים,active
+CASUALTIES,חטוף,active
+CASUALTIES,שבוי,active
+CASUALTIES,שבויים,active
+CASUALTIES,שבה,active
+AMBIGUOUS,נהרג,deferred
+AMBIGUOUS,נהרגו,deferred
+AMBIGUOUS,חדר,deferred
+AMBIGUOUS,חדרו,deferred
+AMBIGUOUS,כטב"ם,deferred

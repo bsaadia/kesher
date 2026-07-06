@@ -6,16 +6,21 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.location import Location
+from models.activity import Activity
 from models.message import Message
-from models.associations import MessageLocation
+from models.associations import MessageLocation, MessageActivity
 
 
-GAZETTEER_PATH = os.path.join("scrap", "geocoded_locations.csv")
+GAZETTEER_PATH = os.path.join("scrap", "gazetteer", "geocoded_locations_new.csv")
+ACTIVITY_TAGS_PATH = os.path.join("scrap", "gazetteer", "activity_tags.csv")
 
 # For ambiguous location names, exclude matches where the name is preceded
-# by one of these strings (indicating a compound phrase, not the place itself).
+# by one of these words (indicating a compound phrase, not the place itself).
+# Separator between the word and the name may be a space or a hyphen (e.g.
+# "עוטף-עזה"), so the trailing separator is added by the pattern builder
+# rather than being baked into the strings here.
 COMPOUND_EXCLUSIONS = {
-    'עזה': ['רצועת ', 'אוגדת ', 'חטיבת ', 'מחוז ', 'נפת ', 'עיריית '],
+    'עזה': ['רצועת', 'אוגדת', 'חטיבת', 'מחוז', 'נפת', 'עיריית', 'עוטף'],
 }
 
 # Whole matched tokens to reject for specific names.
@@ -57,6 +62,77 @@ def load_gazetteer_to_db_if_empty(db_session: Session):
         db_session.commit()
 
 
+def load_activities_to_db_if_empty(db_session: Session):
+    """
+    Loads the distinct activity categories from the activity tags CSV into the
+    database if the Activity table is empty. Only categories with at least one
+    "active" term are loaded; "deferred"/ambiguous terms are ignored.
+    Args:
+        db_session: SQLAlchemy Session object
+    Returns:
+        None
+    """
+    if db_session.scalar(select(func.count()).select_from(Activity)) == 0:
+        tags = pd.read_csv(ACTIVITY_TAGS_PATH)
+        active = tags[tags["status"] == "active"]
+        for category in active["category"].unique():
+            db_session.add(Activity(category=category))
+        db_session.commit()
+
+
+# Cache of (category, compiled_pattern) tuples for the active activity terms,
+# built once from the tags CSV on first use. Each pattern matches the Hebrew
+# term as a whole word, allowing an optional single-letter prefix (ב/כ/ל/מ/ש/ה/ו),
+# mirroring the location matching in find_locations_in_message.
+_activity_terms = None
+
+
+def _load_activity_terms():
+    global _activity_terms
+    if _activity_terms is None:
+        tags = pd.read_csv(ACTIVITY_TAGS_PATH)
+        active = tags[tags["status"] == "active"]
+        terms = []
+        for row in active.itertuples(index=False):
+            pattern = re.compile(r"\b(?:[בכלמשהו])?" + re.escape(row.term_he) + r"\b")
+            terms.append((row.category, pattern))
+        _activity_terms = terms
+    return _activity_terms
+
+
+def find_activities_in_message(db_session: Session, message: Message):
+    """
+    Finds activity terms within the text of a single message and creates
+    message-activity associations for each distinct category matched.
+
+    A message may match several categories (e.g. an air strike that also caused
+    casualties); each category is associated at most once, the same way multiple
+    locations are handled in find_locations_in_message.
+    Args:
+        db_session: SQLAlchemy Session object.
+        message: The Message object to process.
+    """
+    result = db_session.execute(select(Activity))
+    activity_by_category = {a.category: a for a in result.scalars().all()}
+
+    found_categories = set()
+    for category, pattern in _load_activity_terms():
+        if category in found_categories:
+            continue
+        if pattern.search(message.text):
+            found_categories.add(category)
+
+    for category in found_categories:
+        activity = activity_by_category.get(category)
+        if activity is None:
+            continue
+        association = MessageActivity(message_id=message.id, activity_id=activity.id)
+        db_session.add(association)
+
+    if found_categories:
+        db_session.commit()
+
+
 def find_locations_in_message(db_session: Session, message: Message):
     """
     Finds locations from the gazetteer within the text of a single message
@@ -74,7 +150,7 @@ def find_locations_in_message(db_session: Session, message: Message):
         if loc.name_he:
             name_pattern = re.escape(loc.name_he).replace("'", "'?")
             exclusions = COMPOUND_EXCLUSIONS.get(loc.name_he, [])
-            lookbehinds = ''.join(f'(?<!{p})' for p in exclusions)
+            lookbehinds = ''.join(f'(?<!{re.escape(p)}[ \\-])' for p in exclusions)
             pattern_he = lookbehinds + r"\b(?:[בכלמשהו])?" + name_pattern + r"\b"
             word_excl = WORD_EXCLUSIONS.get(loc.name_he, set())
             for m in re.finditer(pattern_he, message.text):
@@ -83,27 +159,42 @@ def find_locations_in_message(db_session: Session, message: Message):
                     break
 
     if not found_locations:
-        return
+        return found_locations
 
     for loc in found_locations:
         association = MessageLocation(message_id=message.id, location_id=loc.id)
         db_session.add(association)
 
     db_session.commit()
+    return found_locations
 
 
-def process_messages_for_locations(db_session: Session, messages):
+def process_message(db_session: Session, message: Message):
     """
-    Runs location extraction over a collection of messages, creating message-location
-    associations for each. Used by both the full seed and the incremental update so the
-    two paths share identical processing logic.
+    Fully processes a single message: extracts locations, and — only when the
+    message mentions at least one location — extracts activity categories.
+
+    Args:
+        db_session: SQLAlchemy Session object.
+        message: The Message object to process.
+    """
+    found_locations = find_locations_in_message(db_session, message)
+    if found_locations:
+        find_activities_in_message(db_session, message)
+
+
+def process_messages(db_session: Session, messages):
+    """
+    Runs location and activity extraction over a collection of messages, creating
+    the corresponding associations for each. Used by both the full seed and the
+    incremental update so the two paths share identical processing logic.
 
     Args:
         db_session: SQLAlchemy Session object.
         messages: Iterable of Message objects to process.
     """
     for message in messages:
-        find_locations_in_message(db_session, message)
+        process_message(db_session, message)
 
 
 # Initialize any resources needed by the processing system

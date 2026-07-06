@@ -7,11 +7,16 @@ import asyncio
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.scraper.scrape_telegram import save_messages_to_db, fetch_messages_in_date_range, init_scraper, close_scraper
-from app.processor.processing import load_gazetteer_to_db_if_empty, process_messages_for_locations
+from app.processor.processing import (
+    load_gazetteer_to_db_if_empty,
+    load_activities_to_db_if_empty,
+    process_messages,
+)
 from models.base import engine, Base
 from models.message import Message
 from models.location import Location
-from models.associations import MessageLocation
+from models.activity import Activity
+from models.associations import MessageLocation, MessageActivity
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -31,6 +36,8 @@ async def seed():
     with Session(engine) as session:
         print("Loading gazetteer to DB if empty...")
         load_gazetteer_to_db_if_empty(session)
+        print("Loading activity categories to DB if empty...")
+        load_activities_to_db_if_empty(session)
 
     client = await init_scraper()
     
@@ -52,8 +59,8 @@ async def seed():
         
     await close_scraper(client)
 
-    # Process messages to find locations
-    print("Processing messages to find locations...")
+    # Process messages to find locations and activities
+    print("Processing messages to find locations and activities...")
     with Session(engine) as session:
         # Get all messages from the DB
         result = session.execute(select(Message))
@@ -61,7 +68,7 @@ async def seed():
 
         print(f"Found {len(messages_from_db)} messages in the database to process.")
 
-        process_messages_for_locations(session, messages_from_db)
+        process_messages(session, messages_from_db)
 
         print("Finished processing messages.")
 

@@ -13,3 +13,16 @@ class MessageLocation(Base):
             "message_id": self.message_id,
             "location_id": self.location_id,
         }
+
+
+class MessageActivity(Base):
+    __tablename__ = "message_activities"
+    message_id: Mapped[int] = mapped_column(ForeignKey("messages.id"), primary_key=True)
+    activity_id: Mapped[int] = mapped_column(ForeignKey("activities.id"), primary_key=True)
+
+    def to_dict(self):
+        """Serializes the MessageActivity object to a dictionary."""
+        return {
+            "message_id": self.message_id,
+            "activity_id": self.activity_id,
+        }

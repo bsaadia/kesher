@@ -5,7 +5,7 @@ Outputs scrap/data/geocoded_locations.csv with lat, lon, precision, matched_quer
 
 Bounding boxes (west, south, east, north) verified against OSM / Wikidata extents:
   Gaza Strip:  34.20°E–34.56°E, 31.21°N–31.60°N
-  West Bank:   34.85°E–35.58°E, 31.32°N–32.58°N
+  Judea & Samaria:   34.85°E–35.58°E, 31.32°N–32.58°N
 """
 
 import csv
@@ -15,15 +15,15 @@ from pathlib import Path
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 
-INPUT_CSV = Path(__file__).parent / "locations_list.csv"
-OUTPUT_CSV = Path(__file__).parent / "data" / "geocoded_locations.csv"
+INPUT_CSV = Path(__file__).parent / "gazetteer_combined_new.csv"
+OUTPUT_CSV = Path(__file__).parent / "data" / "geocoded_locations_new.csv"
 
 FRONT_MAP = {
     "Gaza Strip": {
         "country_codes": "ps",
         "bbox": (34.20, 31.21, 34.56, 31.60),  # (west, south, east, north)
     },
-    "West Bank (Judea & Samaria)": {
+    "Judea & Samaria": {
         "country_codes": "ps",
         "bbox": (34.85, 31.32, 35.58, 32.58),
     },

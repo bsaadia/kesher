@@ -30,7 +30,7 @@ from models.base import engine
 # ── data loading ─────────────────────────────────────────────────────────────
 
 def load_data():
-    """Return (messages_df, locations_df, msg_loc_df) as raw DataFrames."""
+    """Return (messages_df, locations_df, msg_loc_df, activities_df, msg_act_df)."""
     with engine.connect() as conn:
         messages = pd.read_sql(
             text("SELECT id, timestamp, text, channel FROM messages"),
@@ -45,7 +45,15 @@ def load_data():
             text("SELECT message_id, location_id FROM message_locations"),
             conn,
         )
-    return messages, locations, msg_loc
+        activities = pd.read_sql(
+            text("SELECT id, category FROM activities"),
+            conn,
+        )
+        msg_act = pd.read_sql(
+            text("SELECT message_id, activity_id FROM message_activities"),
+            conn,
+        )
+    return messages, locations, msg_loc, activities, msg_act
 
 
 def build_joined(messages, locations, msg_loc):
@@ -54,6 +62,19 @@ def build_joined(messages, locations, msg_loc):
         msg_loc
         .merge(messages, left_on="message_id", right_on="id", suffixes=("", "_msg"))
         .merge(locations, left_on="location_id", right_on="id", suffixes=("", "_loc"))
+    )
+    joined["hour"] = joined["timestamp"].dt.hour
+    joined["date"] = joined["timestamp"].dt.date
+    joined["dow"]  = joined["timestamp"].dt.day_name()
+    return joined
+
+
+def build_activity_joined(messages, activities, msg_act):
+    """Return a flat DataFrame: one row per (message, activity) pair."""
+    joined = (
+        msg_act
+        .merge(activities, left_on="activity_id", right_on="id")
+        .merge(messages[["id", "timestamp", "channel"]], left_on="message_id", right_on="id")
     )
     joined["hour"] = joined["timestamp"].dt.hour
     joined["date"] = joined["timestamp"].dt.date
@@ -141,29 +162,68 @@ def chart_day_of_week(joined, out_dir):
     savefig(fig, out_dir, "05_day_of_week.png")
 
 
-def chart_front_over_time(joined, out_dir):
+def chart_front_weekly_summary(joined, out_dir):
+    """3-panel figure: messages / distinct locations / msgs-per-location, stacked by front per week."""
     if joined["front"].isna().all():
         return
-    daily = (
-        joined.dropna(subset=["front"])
-        .groupby(["date", "front"])["message_id"]
-        .nunique()
-        .reset_index()
-    )
-    daily["date"] = pd.to_datetime(daily["date"])
-    fronts = daily["front"].unique()
+    import numpy as np
 
-    fig, ax = plt.subplots(figsize=(12, 5))
-    for front in sorted(fronts):
-        sub = daily[daily["front"] == front].set_index("date")["message_id"]
-        sub = sub.resample("W").sum()
-        ax.plot(sub.index, sub.values, marker="o", markersize=3, label=front)
+    df = joined.dropna(subset=["front"]).copy()
+    df["week"] = pd.to_datetime(df["date"]).dt.to_period("W").dt.start_time
 
-    style_bar(ax, "Weekly messages per front over time", ylabel="Messages / week")
-    ax.legend(fontsize=8)
-    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%b %d"))
-    fig.autofmt_xdate()
-    savefig(fig, out_dir, "06_front_over_time.png")
+    fronts = sorted(df["front"].dropna().unique())
+
+    agg = df.groupby(["week", "front"]).agg(
+        messages=("message_id", "nunique"),
+        locations=("location_id", "nunique"),
+    ).reset_index()
+    agg["ratio"] = agg["messages"] / agg["locations"]
+
+    def to_pivot(col):
+        return (
+            agg.pivot(index="week", columns="front", values=col)
+            .reindex(columns=fronts)
+            .sort_index()
+            .fillna(0)
+        )
+
+    msg_pivot   = to_pivot("messages")
+    loc_pivot   = to_pivot("locations")
+    ratio_pivot = to_pivot("ratio")
+
+    weeks  = msg_pivot.index
+    x      = np.arange(len(weeks))
+    xlabels = [w.strftime("%b %d") for w in weeks]
+    colors  = [plt.cm.tab10(i) for i in range(len(fronts))]
+
+    panels = [
+        (msg_pivot,   "Messages",         "Messages / week"),
+        (loc_pivot,   "Distinct locations", "Locations / week"),
+        (ratio_pivot, "Msgs per location",  "Ratio"),
+    ]
+
+    fig, axes = plt.subplots(3, 1, figsize=(max(12, len(x) * 0.55), 14), sharex=True)
+
+    for ax, (pivot, title, ylabel) in zip(axes, panels):
+        bottom = np.zeros(len(x))
+        for front, color in zip(fronts, colors):
+            vals = pivot[front].values
+            ax.bar(x, vals, bottom=bottom, label=front, color=color, width=0.8)
+            bottom += vals
+        ax.set_title(title, fontsize=11, fontweight="bold", pad=6)
+        ax.set_ylabel(ylabel, fontsize=10)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+    axes[-1].set_xticks(x)
+    axes[-1].set_xticklabels(xlabels, rotation=45, ha="right", fontsize=8)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, title="Front", loc="upper right",
+               fontsize=9, bbox_to_anchor=(1.02, 0.98))
+    fig.suptitle("Weekly activity by front", fontsize=14, fontweight="bold", y=1.01)
+    fig.tight_layout()
+    savefig(fig, out_dir, "06_front_weekly_summary.png")
 
 
 def chart_top_locations_per_front(joined, out_dir, top_n=12):
@@ -297,11 +357,124 @@ def chart_location_cooccurrence(joined, out_dir, top_n=20):
     savefig(fig, out_dir, "10_location_cooccurrence.png")
 
 
+# ── activity charts ───────────────────────────────────────────────────────────
+
+def chart_activity_distribution(act_joined, out_dir):
+    """How many unique messages per activity category."""
+    counts = act_joined.groupby("category")["message_id"].nunique().sort_values(ascending=False)
+    if counts.empty:
+        return
+
+    fig, ax = plt.subplots(figsize=(10, max(4, len(counts) * 0.42)))
+    counts[::-1].plot.barh(ax=ax, color="cadetblue")
+    style_bar(ax, "Messages per activity category", ylabel="Activity")
+    savefig(fig, out_dir, "12_activity_distribution.png")
+
+
+def chart_activity_over_time(act_joined, out_dir):
+    """Weekly message count per activity category."""
+    daily = act_joined.copy()
+    daily["date"] = pd.to_datetime(daily["date"])
+    pivot = (
+        daily.groupby(["date", "category"])["message_id"]
+        .nunique()
+        .unstack(fill_value=0)
+        .resample("W")
+        .sum()
+    )
+    if pivot.empty:
+        return
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for cat in pivot.columns:
+        ax.plot(pivot.index, pivot[cat], marker="o", markersize=3, label=cat)
+
+    style_bar(ax, "Weekly messages per activity over time", ylabel="Messages / week")
+    ax.legend(fontsize=8, ncol=2)
+    ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%b %d"))
+    fig.autofmt_xdate()
+    savefig(fig, out_dir, "13_activity_over_time.png")
+
+
+def chart_activity_front_heatmap(act_joined, loc_joined, out_dir):
+    """Activity × front heatmap — unique messages that have both."""
+    if loc_joined["front"].isna().all():
+        return
+
+    msg_fronts = loc_joined[["message_id", "front"]].drop_duplicates()
+    combined = act_joined[["message_id", "category"]].drop_duplicates().merge(
+        msg_fronts, on="message_id"
+    )
+    if combined.empty:
+        return
+
+    pivot = combined.pivot_table(
+        index="category", columns="front",
+        values="message_id", aggfunc="nunique", fill_value=0,
+    )
+
+    fig, ax = plt.subplots(figsize=(max(6, len(pivot.columns) * 1.2), max(4, len(pivot) * 0.5)))
+    im = ax.imshow(pivot.values, aspect="auto", cmap="YlOrRd")
+    plt.colorbar(im, ax=ax, label="Unique messages")
+    ax.set_xticks(range(len(pivot.columns)))
+    ax.set_xticklabels(pivot.columns, rotation=30, ha="right", fontsize=9)
+    ax.set_yticks(range(len(pivot.index)))
+    ax.set_yticklabels(pivot.index, fontsize=9)
+
+    for i in range(len(pivot.index)):
+        for j in range(len(pivot.columns)):
+            v = pivot.values[i, j]
+            if v > 0:
+                ax.text(j, i, str(v), ha="center", va="center",
+                        fontsize=8, color="black" if v < pivot.values.max() * 0.6 else "white")
+
+    ax.set_title("Activity × front (unique messages)", fontsize=13, fontweight="bold", pad=10)
+    fig.tight_layout()
+    savefig(fig, out_dir, "14_activity_front_heatmap.png")
+
+
+def chart_top_locations_per_activity(act_joined, loc_joined, out_dir, top_n=10):
+    """Small-multiples: top locations within each activity category."""
+    msg_locs = loc_joined[["message_id", "name_en"]].drop_duplicates()
+    combined = act_joined[["message_id", "category"]].drop_duplicates().merge(
+        msg_locs, on="message_id"
+    )
+    if combined.empty:
+        return
+
+    cats = sorted(combined["category"].unique())
+    ncols = min(2, len(cats))
+    nrows = (len(cats) + ncols - 1) // ncols
+    row_h = max(4, top_n * 0.42)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 7, nrows * row_h))
+    axes = [axes] if len(cats) == 1 else list(
+        axes.flat if hasattr(axes, "flat") else axes
+    )
+
+    for ax, cat in zip(axes, cats):
+        counts = (
+            combined[combined["category"] == cat]
+            .groupby("name_en")["message_id"].nunique()
+            .nlargest(top_n)
+        )
+        counts[::-1].plot.barh(ax=ax, color="cadetblue")
+        style_bar(ax, cat, ylabel="")
+        ax.tick_params(axis="y", labelsize=8)
+
+    for ax in axes[len(cats):]:
+        ax.set_visible(False)
+
+    fig.suptitle(f"Top {top_n} locations per activity", fontsize=14, fontweight="bold", y=1.01)
+    fig.tight_layout()
+    savefig(fig, out_dir, "15_top_locations_per_activity.png")
+
+
 # ── summary printout ──────────────────────────────────────────────────────────
 
-def print_summary(messages, locations, msg_loc, joined):
+def print_summary(messages, locations, msg_loc, joined, act_joined):
     n_msg          = len(messages)
     n_with_loc     = joined["message_id"].nunique()
+    n_with_act     = act_joined["message_id"].nunique() if not act_joined.empty else 0
     n_locations    = len(locations)
     n_used_locs    = joined["location_id"].nunique()
     n_channels     = messages["channel"].nunique()
@@ -311,18 +484,25 @@ def print_summary(messages, locations, msg_loc, joined):
     print("=" * 56)
     print("  DATASET SUMMARY")
     print("=" * 56)
-    print(f"  Total messages          : {n_msg:,}")
-    print(f"  Messages with locations : {n_with_loc:,}  ({100*n_with_loc/max(n_msg,1):.1f}%)")
-    print(f"  Unique locations (DB)   : {n_locations:,}")
-    print(f"  Locations cited         : {n_used_locs:,}")
-    print(f"  Channels                : {n_channels:,}")
-    print(f"  Date range              : {date_range}")
+    print(f"  Total messages           : {n_msg:,}")
+    print(f"  Messages with locations  : {n_with_loc:,}  ({100*n_with_loc/max(n_msg,1):.1f}%)")
+    print(f"  Messages with activities : {n_with_act:,}  ({100*n_with_act/max(n_msg,1):.1f}%)")
+    print(f"  Unique locations (DB)    : {n_locations:,}")
+    print(f"  Locations cited          : {n_used_locs:,}")
+    print(f"  Channels                 : {n_channels:,}")
+    print(f"  Date range               : {date_range}")
     print()
     print("  Top 10 locations by unique messages:")
     top10 = joined.groupby("name_en")["message_id"].nunique().nlargest(10)
     for name, cnt in top10.items():
         print(f"    {cnt:>5}  {name}")
     print()
+    if not act_joined.empty:
+        print("  Messages per activity category:")
+        by_act = act_joined.groupby("category")["message_id"].nunique().sort_values(ascending=False)
+        for cat, cnt in by_act.items():
+            print(f"    {cnt:>5}  {cat}")
+        print()
     if not joined["front"].isna().all():
         print("  Messages by front:")
         by_front = joined.groupby("front")["message_id"].nunique().sort_values(ascending=False)
@@ -352,7 +532,7 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     print("Loading data ...", flush=True)
-    messages, locations, msg_loc = load_data()
+    messages, locations, msg_loc, activities, msg_act = load_data()
 
     if messages.empty:
         print("No messages found. Run the scraper first.")
@@ -364,7 +544,9 @@ def main():
         print("No messages have locations assigned yet. Run the processor first.")
         sys.exit(1)
 
-    print_summary(messages, locations, msg_loc, joined)
+    act_joined = build_activity_joined(messages, activities, msg_act)
+
+    print_summary(messages, locations, msg_loc, joined, act_joined)
 
     print("Generating charts ...")
     chart_messages_over_time(messages, out_dir=args.out_dir)
@@ -372,12 +554,17 @@ def main():
     chart_locations_per_front(joined, out_dir=args.out_dir)
     chart_hourly_activity(joined, out_dir=args.out_dir)
     chart_day_of_week(joined, out_dir=args.out_dir)
-    chart_front_over_time(joined, out_dir=args.out_dir)
+    chart_front_weekly_summary(joined, out_dir=args.out_dir)
     chart_top_locations_per_front(joined, out_dir=args.out_dir)
     chart_hourly_activity_per_front(joined, out_dir=args.out_dir)
     chart_dow_per_front(joined, out_dir=args.out_dir)
     chart_location_correlation(joined, out_dir=args.out_dir)
     chart_location_cooccurrence(joined, out_dir=args.out_dir)
+    if not act_joined.empty:
+        chart_activity_distribution(act_joined, out_dir=args.out_dir)
+        chart_activity_over_time(act_joined, out_dir=args.out_dir)
+        chart_activity_front_heatmap(act_joined, joined, out_dir=args.out_dir)
+        chart_top_locations_per_activity(act_joined, joined, out_dir=args.out_dir)
 
     print(f"\nDone. {len(os.listdir(args.out_dir))} files in {args.out_dir}/")
 
