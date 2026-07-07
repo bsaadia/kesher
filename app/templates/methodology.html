@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Methodology — Tzahal Mapper</title>
+  <title>Methodology — Kesher</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -46,19 +46,69 @@
 </head>
 <body>
   <header>
-    <h1>Tzahal Mapper</h1>
+    <h1>Kesher - קשר</h1>
     <a href="/">← Back to Explore</a>
   </header>
   <main>
-    <h2>Methodology</h2>
+    <h2>What this data is, and isn't</h2>
     <p>
-      Placeholder methodology copy. This page will explain how messages are collected,
-      how locations and activity categories are tagged, and any limitations or caveats
-      readers should keep in mind when interpreting the figures.
+      Every marker, timeline, and chart on this site represents a message the IDF chose to
+      publish on its official Telegram channel, not an independent record of events on the
+      ground. The IDF decides what to announce, when to announce it, and how to phrase it.
+      That means the same real-world event can be over-represented (multiple messages about
+      one strike), under-represented (no announcement at all), or framed in ways that shape
+      how it reads. This app maps messaging activity. It should be read as a lens on
+      communication strategy and operational tempo, not as a casualty count or ground-truth
+      record of the war.
     </p>
+
+    <h2>Collection</h2>
     <p>
-      Placeholder: description of data sources, update frequency, and classification
-      approach goes here.
+      Messages are scraped directly from the IDF's official Telegram channel using an
+      authenticated Telegram client. As of this writing, the underlying dataset includes
+      roughly 17,000 raw scraped messages, of which about 3,200 have been geographically
+      tagged for analysis.
+    </p>
+
+    <h2>Geotagging</h2>
+    <p>
+      Locations are assigned using a gazetteer of about 208 named places across the six
+      fronts, with Hebrew, Arabic, and English name variants. Hebrew text is normalized by
+      stripping common prefixes (ה, ו, ב, כ, ל, ש) before matching against the gazetteer.
+      This is a deterministic, rule-based approach rather than a per-message AI
+      classification: it's slower to expand but fully reproducible, and any two people
+      running it on the same raw data will get the same tags. Where a message could
+      plausibly reference more than one location, the system errs toward tagging it to all
+      plausible locations rather than guessing a single "best" one, since over-tagging is a
+      smaller distortion than silently dropping a real mention.
+    </p>
+
+    <h2>Reading the ratios</h2>
+    <p>
+      The messages-per-location heatmap divides the number of messages for a front in a
+      given period by the number of distinct locations mentioned for that front in the same
+      period. A high ratio means coverage was concentrated: relatively few places were
+      mentioned repeatedly. A low ratio, closer to one, means coverage was spread across many
+      distinct places instead. The thin vertical line drawn over each cell encodes the raw
+      message count, so a high ratio driven by heavy volume can be told apart from one
+      produced by very few locations with only a handful of messages each.
+    </p>
+
+    <h2>Front ordering</h2>
+    <p>
+      Fronts are always listed in the same order: by total distinct message count over the
+      full history, from most to least mentioned, not alphabetically. That order is fixed
+      once from the complete, unfiltered dataset and reused everywhere (the legend, the bar
+      charts, the heatmap rows, and the facet grid), so a front's rank stays stable as you
+      change the date range or granularity instead of reshuffling around whatever subset of
+      data happens to be visible.
+    </p>
+
+    <h2>What's next</h2>
+    <p>
+      Future versions plan to break messaging down by type (air, ground, projectile,
+      casualties and hostages) once the methodology for that classification is solid enough
+      to publish with confidence.
     </p>
   </main>
 </body>

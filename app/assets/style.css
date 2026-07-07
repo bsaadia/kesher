@@ -22,11 +22,18 @@
     user-select: none;
 }
 
+/* Smaller variant used for the inline per-plot description icons. */
+.info-icon--sm {
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+}
+
 .info-popover {
     position: absolute;
     top: calc(100% + 0.5rem);
-    right: 0;
-    width: 300px;
+    left: 0;
+    width: 380px;
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -39,6 +46,21 @@
     pointer-events: none;
     transition: opacity 0.18s ease;
     z-index: 20;
+}
+
+/* The header icon sits in the page's top-right corner, so its popover has to
+   open leftward instead of the default rightward, or it gets clipped by the
+   viewport edge. */
+.info-icon-wrapper--corner .info-popover {
+    left: auto;
+    right: 0;
+}
+
+/* Smaller popover for the inline per-plot description icons. */
+.info-popover--sm {
+    width: 260px;
+    padding: 0.7rem 0.8rem;
+    font-size: 0.8rem;
 }
 
 .info-icon-wrapper:hover .info-popover {

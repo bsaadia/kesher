@@ -96,6 +96,22 @@ def load_data(group_by: str) -> pd.DataFrame:
     return df.dropna(subset=["timestamp"])
 
 
+def _plot_info(label: str, description: str):
+    """A small label + hover-info-icon pair, styled like the header's About
+    icon (same CSS classes, smaller variant), for briefly explaining an
+    individual plot or subplot next to its title."""
+    return html.Div(
+        style={"display": "flex", "alignItems": "center", "gap": "0.4rem"},
+        children=[
+            html.Span(label, style={"fontSize": "0.85rem", "fontWeight": "600", "color": "#555"}),
+            html.Div(className="info-icon-wrapper", children=[
+                html.Div("i", className="info-icon info-icon--sm"),
+                html.Div(description, className="info-popover info-popover--sm"),
+            ]),
+        ],
+    )
+
+
 def _build_color_map(values) -> dict:
     """Assign each value a fixed color from a repeating palette, keyed by
     sorted value so the mapping is stable regardless of which subset of
@@ -498,7 +514,7 @@ def init_explore_dash(server):
     dash_app = Dash(
         server=server,
         url_base_pathname=URL_BASE,
-        title="Explore — Tzahal Mapper",
+        title="Explore — Kesher",
     )
 
     # Load once to seed the date-picker bounds; callbacks reload live so new
@@ -543,18 +559,44 @@ def init_explore_dash(server):
                 style={"display": "flex", "justifyContent": "space-between",
                        "alignItems": "flex-start"},
                 children=[
-                    html.H1("Explore message activity", style={"fontSize": "1.4rem", "margin": "0"}),
-                    html.Div(className="info-icon-wrapper", children=[
+                    html.Div([
+                        html.H1("Kesher - קשר", style={"fontSize": "1.4rem", "margin": "0"}),
+                        html.P(
+                            [
+                                "Mapping IDF Telegram messaging across six fronts since October 7th",
+                                html.Span(" · ", style={"margin": "0 0.4rem"}),
+                                f"Last updated: {max_date.strftime('%d %b %Y')}",
+                            ],
+                            style={"fontSize": "0.85rem", "color": "#888", "margin": "0.25rem 0 0"},
+                        ),
+                    ]),
+                    html.Div(className="info-icon-wrapper info-icon-wrapper--corner", children=[
                         html.Div("i", className="info-icon"),
                         html.Div(className="info-popover", children=[
                             html.P(
+                                "Kesher (קשר, \"connection\") visualizes messaging activity from the "
+                                "IDF's official Telegram channel across six fronts of the war that began "
+                                "on October 7th: Gaza, Judea & Samaria, Lebanon, Syria, Yemen, and Iran. "
+                                "The app maps what was communicated, when, and where, and lets you "
+                                "explore how the pace and geography of that messaging shifted over time.",
+                                style={"margin": "0 0 0.75rem"},
+                            ),
+                            html.P(
                                 [
-                                    "Placeholder about text: this dashboard tracks messages from public "
-                                    "Telegram channels and tags them by location and activity type. "
-                                    "Figures update as new data is scraped and processed. ",
-                                    html.A("Read more about our methodology", href="/methodology"),
-                                    ".",
+                                    "All data comes from a single source: the IDF's official Telegram "
+                                    "channel, in Hebrew. Messages are scraped, then matched against a "
+                                    "gazetteer of about 208 named locations across the six fronts to "
+                                    "assign coordinates. See ",
+                                    html.A("the full methodology", href="/methodology"),
+                                    " for how this shapes what the data can and can't tell you.",
                                 ],
+                                style={"margin": "0 0 0.75rem"},
+                            ),
+                            html.P(
+                                "Kesher is also a personal data engineering project, built end to end "
+                                "(scraping, geospatial tagging, and visualization) as a hands-on "
+                                "exploration of turning a messy real-world data source into something "
+                                "legible and explorable.",
                                 style={"margin": "0"},
                             ),
                         ]),
@@ -563,7 +605,7 @@ def init_explore_dash(server):
             ),
 
             html.H2("Where messages are located", style={"fontSize": "1.2rem", "margin": "1.25rem 0 0.5rem"}),
-            html.P("One marker per location, colored by total message count across the whole history. "
+            html.P("One marker per location, coloured by total message count across the whole history. "
                    "Click a marker to see its messages.",
                    style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
             html.Div(
@@ -649,14 +691,36 @@ def init_explore_dash(server):
                     ),
                 ],
             ),
+            html.Div(
+                style={"display": "flex", "gap": "1.5rem", "flexWrap": "wrap", "margin": "0.75rem 0 0.5rem"},
+                children=[
+                    _plot_info("Messages per front",
+                               "Distinct messages per front, stacked and bucketed by the granularity "
+                               "control above. Always plots the full history; the time frame picker "
+                               "and slider control which part of the x-axis is visible, not what's "
+                               "included."),
+                    _plot_info("Distinct locations per front",
+                               "Distinct locations mentioned per front, stacked and bucketed the same "
+                               "way as the messages chart above it."),
+                    _plot_info("Messages-per-location ratio",
+                               "Front by period heatmap of messages divided by distinct locations "
+                               "mentioned. Darker cells mean coverage was concentrated on fewer places. "
+                               "The vertical line height encodes the raw message count for that cell."),
+                ],
+            ),
             dcc.Graph(id="comparison-graph", figure=comparison_figure),
 
             html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
             html.H2("Messages vs. locations per front-period", style={"fontSize": "1.2rem"}),
             html.P("Each dot is one period (day/week/month, per the granularity control above) "
-                   "for that front within the selected time frame; color marks when it occurred. "
+                   "for that front within the selected time frame; colour marks when it occurred. "
                    "Axes are fixed to the same scale across fronts for direct comparison.",
                    style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+            _plot_info("Distinct locations vs. messages, per front-period",
+                       "One dot per period (day, week, or month, per the granularity control) for "
+                       "that front. X axis is distinct locations mentioned, y axis is message count. "
+                       "Colour marks when the period occurred. Axes are fixed to the same scale across "
+                       "fronts for direct comparison."),
             dcc.Graph(id="front-facet-scatter", figure=front_facet_figure),
 
             html.Footer(
@@ -665,6 +729,13 @@ def init_explore_dash(server):
                 children=[
                     html.A("Methodology", href="/methodology",
                            style={"color": "#888", "textDecoration": "none"}),
+                    html.Span(" · ", style={"margin": "0 0.4rem"}),
+                    html.Span([
+                        "Built by ",
+                        html.A("Benjamin Saadia", href="https://www.linkedin.com/in/benjaminsaadia/",
+                               target="_blank", rel="noopener noreferrer",
+                               style={"color": "#888", "textDecoration": "none"}),
+                    ]),
                 ],
             ),
         ],
