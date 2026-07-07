@@ -1,6 +1,6 @@
 """Interactive exploratory dashboard, embedded into the Flask server via Dash.
 
-Mounts at ``/dash/explore/``. Provides a point map of where messages are
+Mounts at ``/``, the app's main route. Provides a point map of where messages are
 located (click a marker to inspect its messages), plus front-comparison and
 facet views driven by a shared date-range picker and time-granularity
 toggle. Built to be extended with further exploratory views.
@@ -28,7 +28,7 @@ from models.associations import MessageLocation, MessageActivity
 # g.db_session lifecycle in app/__init__.py.
 Session = sessionmaker(bind=engine)
 
-URL_BASE = "/dash/explore/"
+URL_BASE = "/"
 
 # Raw `Message.channel` values (numeric Telegram channel ids, as stored by
 # the scraper) mapped to a display name for the messages sidebar; channels
@@ -125,10 +125,10 @@ def load_location_data() -> pd.DataFrame:
     have multiple locations and/or multiple activity tags, so both fan out
     independently. ``activity`` is NaN when the message has no activity
     classification. Columns: message_id, timestamp, location_id, name_en,
-    name_he, front, lat, lon, activity."""
+    name_he, name_ar, front, lat, lon, activity."""
     query = (
         select(Message.id, Message.timestamp, Location.id.label("location_id"),
-               Location.name_en, Location.name_he, Location.front,
+               Location.name_en, Location.name_he, Location.name_ar, Location.front,
                Location.lat, Location.lon, Activity.category.label("activity"))
         .join(MessageLocation, Message.id == MessageLocation.message_id)
         .join(Location, MessageLocation.location_id == Location.id)
@@ -139,7 +139,7 @@ def load_location_data() -> pd.DataFrame:
         rows = session.execute(query).all()
 
     df = pd.DataFrame(rows, columns=["message_id", "timestamp", "location_id",
-                                      "name_en", "name_he", "front", "lat", "lon", "activity"])
+                                      "name_en", "name_he", "name_ar", "front", "lat", "lon", "activity"])
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     return df.dropna(subset=["timestamp"])
 
@@ -425,7 +425,8 @@ def build_map_figure(df: pd.DataFrame):
     if df.empty:
         return _EMPTY_MAP_FIG
 
-    location_counts = df.groupby(["location_id", "name_en", "name_he", "lat", "lon"])["message_id"] \
+    location_counts = df.groupby(["location_id", "name_en", "name_he", "name_ar", "lat", "lon"],
+                                  dropna=False)["message_id"] \
         .nunique().reset_index(name="messages")
     if location_counts.empty:
         return _EMPTY_MAP_FIG
@@ -434,13 +435,23 @@ def build_map_figure(df: pd.DataFrame):
     # sit on top of quieter, overlapping neighbors rather than being buried.
     location_counts = location_counts.sort_values("messages")
 
+    # A handful of locations (e.g. Gaza City) have message counts far above
+    # the rest, which washes out the color scale for everywhere else if the
+    # color range spans the true max. Clip the color range at the 95th
+    # percentile — the few busiest locations saturate to the top color, but
+    # the bulk of (lower-volume) locations get the full color range and
+    # become distinguishable from each other. Hover text still shows the
+    # true, unclipped count.
+    color_cap = max(location_counts["messages"].quantile(0.95), location_counts["messages"].min() + 1)
+
     zoom, center = _bounds_zoom_center(location_counts["lat"], location_counts["lon"])
 
     fig = px.scatter_mapbox(
         location_counts, lat="lat", lon="lon", color="messages",
         color_continuous_scale="YlOrRd",
-        hover_name="name_en",
-        hover_data={"name_he": True, "messages": True, "lat": False, "lon": False},
+        range_color=[0, color_cap],
+        hover_name="name_he",
+        hover_data={"name_en": True, "name_ar": True, "messages": True, "lat": False, "lon": False},
         custom_data=["location_id"],
         zoom=zoom, center=center,
         template="plotly_white", mapbox_style="carto-positron",
@@ -458,7 +469,8 @@ def build_map_figure(df: pd.DataFrame):
     fig.add_trace(outline)
     fig.data = (fig.data[-1],) + fig.data[:-1]
 
-    fig.update_layout(margin=dict(l=0, r=0, t=10, b=0), coloraxis_colorbar=dict(title="Messages"))
+    fig.update_layout(margin=dict(l=0, r=0, t=10, b=0))
+    fig.update_coloraxes(showscale=False)
     return fig
 
 
@@ -527,7 +539,28 @@ def init_explore_dash(server):
         style={"font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                "padding": "1.5rem", "maxWidth": "1200px", "margin": "0 auto"},
         children=[
-            html.H1("Explore message activity", style={"fontSize": "1.4rem"}),
+            html.Div(
+                style={"display": "flex", "justifyContent": "space-between",
+                       "alignItems": "flex-start"},
+                children=[
+                    html.H1("Explore message activity", style={"fontSize": "1.4rem", "margin": "0"}),
+                    html.Div(className="info-icon-wrapper", children=[
+                        html.Div("i", className="info-icon"),
+                        html.Div(className="info-popover", children=[
+                            html.P(
+                                [
+                                    "Placeholder about text: this dashboard tracks messages from public "
+                                    "Telegram channels and tags them by location and activity type. "
+                                    "Figures update as new data is scraped and processed. ",
+                                    html.A("Read more about our methodology", href="/methodology"),
+                                    ".",
+                                ],
+                                style={"margin": "0"},
+                            ),
+                        ]),
+                    ]),
+                ],
+            ),
 
             html.H2("Where messages are located", style={"fontSize": "1.2rem", "margin": "1.25rem 0 0.5rem"}),
             html.P("One marker per location, colored by total message count across the whole history. "
@@ -625,6 +658,15 @@ def init_explore_dash(server):
                    "Axes are fixed to the same scale across fronts for direct comparison.",
                    style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
             dcc.Graph(id="front-facet-scatter", figure=front_facet_figure),
+
+            html.Footer(
+                style={"marginTop": "3rem", "paddingTop": "1rem", "borderTop": "1px solid #ddd",
+                       "textAlign": "center", "fontSize": "0.75rem", "color": "#888"},
+                children=[
+                    html.A("Methodology", href="/methodology",
+                           style={"color": "#888", "textDecoration": "none"}),
+                ],
+            ),
         ],
     )
 

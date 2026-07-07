@@ -1,4 +1,5 @@
 from telethon import TelegramClient
+from telethon.sessions import StringSession
 from datetime import datetime, timezone
 from typing import List, Dict
 from models.db import MessageStorage
@@ -7,18 +8,28 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 import asyncio
 from bidi.algorithm import get_display
-from app.config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE
+from app.config import TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_PHONE, TELEGRAM_SESSION_STRING
 import csv
 
 async def init_scraper()-> TelegramClient:
     """
     Initializes and starts a TelegramClient session asynchronously.
 
+    Uses a StringSession (from TELEGRAM_SESSION_STRING) rather than a session
+    file, since a file wouldn't survive between runs on Render's ephemeral
+    filesystem. If TELEGRAM_SESSION_STRING is unset, Telethon performs the
+    normal interactive login and a fresh session string is printed so it can
+    be saved as TELEGRAM_SESSION_STRING for subsequent headless runs.
+
     Returns:
         TelegramClient: An instance of the TelegramClient after successful authentication and startup.
     """
-    client = TelegramClient('session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
+    client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), TELEGRAM_API_ID, TELEGRAM_API_HASH)
     await client.start(phone=TELEGRAM_PHONE)
+    if not TELEGRAM_SESSION_STRING:
+        print("No TELEGRAM_SESSION_STRING set. Save this value as TELEGRAM_SESSION_STRING "
+              "in your .env / Render env vars so future runs don't need an interactive login:")
+        print(client.session.save())
     return client
 
 async def close_scraper(client: TelegramClient)-> None:

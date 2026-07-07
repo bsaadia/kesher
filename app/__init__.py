@@ -40,17 +40,8 @@ def create_app():
     # For a more flexible app, it should be in the config file.
 
     # Step 3: Register blueprints
-    # Blueprints for messages, locations, and admin would be imported and registered here.
-    from app.routes.messages import messages_bp
-    from app.routes.associations import associations_bp
-    from app.routes.locations import locations_bp
-    from app.routes.map import map_bp
-    from app.routes.ridgeline import ridgeline_bp
-    app.register_blueprint(messages_bp)
-    app.register_blueprint(associations_bp)
-    app.register_blueprint(locations_bp)
-    app.register_blueprint(map_bp)
-    app.register_blueprint(ridgeline_bp)
+    from app.routes.methodology import methodology_bp
+    app.register_blueprint(methodology_bp)
 
     # Step 3b: Mount embedded Dash apps onto the Flask server
     from app.dash_apps.explore import init_explore_dash
