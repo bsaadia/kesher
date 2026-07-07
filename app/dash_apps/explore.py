@@ -512,10 +512,16 @@ def init_explore_dash(server):
     front_order = _order_by_count(seed_front, "front")
 
     # Built once at boot: the map is a static full-history density with no
-    # controls driving it. The facet figure does react to the date-range/
-    # granularity controls (via a callback below) so isn't seeded here.
+    # controls driving it. The comparison/facet figures below are also seeded
+    # here (from the same data, at the controls' default values) so the page
+    # renders populated on first load without needing their callbacks to
+    # fire — those callbacks (prevent_initial_call=True) only run in
+    # response to actual user interaction from then on.
     loc_data = load_location_data()
     map_figure = build_map_figure(loc_data)
+    comparison_figure = build_comparison_figure(seed_front, loc_data, "week", front_order, front_color_map)
+    front_facet_figure = build_front_facet_figure(seed_front, loc_data, min_date.date(), max_date.date(),
+                                                   "week", front_order)
 
     dash_app.layout = html.Div(
         style={"font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -610,7 +616,7 @@ def init_explore_dash(server):
                     ),
                 ],
             ),
-            dcc.Graph(id="comparison-graph"),
+            dcc.Graph(id="comparison-graph", figure=comparison_figure),
 
             html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
             html.H2("Messages vs. locations per front-period", style={"fontSize": "1.2rem"}),
@@ -618,7 +624,7 @@ def init_explore_dash(server):
                    "for that front within the selected time frame; color marks when it occurred. "
                    "Axes are fixed to the same scale across fronts for direct comparison.",
                    style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
-            dcc.Graph(id="front-facet-scatter"),
+            dcc.Graph(id="front-facet-scatter", figure=front_facet_figure),
         ],
     )
 
@@ -639,6 +645,7 @@ def init_explore_dash(server):
     @dash_app.callback(
         Output("comparison-graph", "figure"),
         Input("granularity", "value"),
+        prevent_initial_call=True,
     )
     def update_comparison_graph(granularity):
         return build_comparison_figure(load_data("front"), load_location_data(),
@@ -652,6 +659,7 @@ def init_explore_dash(server):
         Input("date-range", "start_date"),
         Input("date-range", "end_date"),
         Input("granularity", "value"),
+        prevent_initial_call=True,
     )
     def update_front_facet_graph(start_date, end_date, granularity):
         return build_front_facet_figure(load_data("front"), load_location_data(),

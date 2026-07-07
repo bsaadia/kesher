@@ -7,7 +7,7 @@ class Message(Base):
     __tablename__ = "messages"
     id: Mapped[int] = mapped_column(primary_key=True)
     telegram_id: Mapped[int] = mapped_column(Integer, index=True)
-    timestamp: Mapped[str] = mapped_column(DateTime)
+    timestamp: Mapped[str] = mapped_column(DateTime, index=True)
     text: Mapped[str] = mapped_column(String)
     channel: Mapped[str] = mapped_column(String)
     scraped_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

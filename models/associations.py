@@ -5,7 +5,7 @@ from models.base import Base
 class MessageLocation(Base):
     __tablename__ = "message_locations"
     message_id: Mapped[int] = mapped_column(ForeignKey("messages.id"), primary_key=True)
-    location_id: Mapped[int] = mapped_column(ForeignKey("locations.id"), primary_key=True)
+    location_id: Mapped[int] = mapped_column(ForeignKey("locations.id"), primary_key=True, index=True)
 
     def to_dict(self):
         """Serializes the MessageLocation object to a dictionary."""

@@ -9,7 +9,7 @@ class Location(Base):
     name_he: Mapped[str] = mapped_column(String)
     name_en: Mapped[str] = mapped_column(String)
     name_ar: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    front: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    front: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
     lat: Mapped[float] = mapped_column(nullable=False)
     lon: Mapped[float] = mapped_column(nullable=False)
 
