@@ -18,7 +18,7 @@ from app.processor.processing import (
     load_activities_to_db_if_empty,
     process_messages,
 )
-from models.base import engine, Base
+from models.base import engine
 from models.message import Message
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
@@ -32,13 +32,12 @@ async def update_database_to_current():
     Brings the database up to the present by appending only messages newer than what is
     already stored — no wiping, no full re-scrape.
 
-    - Ensures tables and the gazetteer exist (never deletes).
+    - Ensures the gazetteer exists (never deletes).
     - Watermarks off MAX(telegram_id) and fetches only strictly-newer messages.
     - Dedups + inserts the new messages, then geolocates just those new rows.
-    """
-    print("Ensuring database tables exist...")
-    Base.metadata.create_all(engine)
 
+    Schema is managed by Alembic (`alembic upgrade head`), not this script.
+    """
     with Session(engine) as session:
         load_gazetteer_to_db_if_empty(session)
         load_activities_to_db_if_empty(session)

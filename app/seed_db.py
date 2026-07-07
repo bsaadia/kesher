@@ -12,7 +12,7 @@ from app.processor.processing import (
     load_activities_to_db_if_empty,
     process_messages,
 )
-from models.base import engine, Base
+from models.base import engine
 from models.message import Message
 from models.location import Location
 from models.activity import Activity
@@ -27,13 +27,17 @@ async def seed():
     - Ensures the gazetteer of locations is loaded.
     - Fetches messages from October 7th, 2023 onwards.
     - Populates the message-location associations table.
+
+    Schema is managed by Alembic (`alembic upgrade head`), not this script.
     """
-    print("Rebuilding database schema (dropping and recreating all tables)...")
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    print("Database reset complete.")
-    
     with Session(engine) as session:
+        session.query(MessageActivity).delete()
+        session.query(MessageLocation).delete()
+        session.query(Message).delete()
+        session.query(Activity).delete()
+        session.query(Location).delete()
+        session.commit()
+        print("Cleared existing messages, locations, activities, and associations.")
         print("Loading gazetteer to DB if empty...")
         load_gazetteer_to_db_if_empty(session)
         print("Loading activity categories to DB if empty...")

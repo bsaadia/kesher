@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from models.base import engine, Base
+from models.base import engine
 from models.message import Message
 from models.associations import MessageLocation, MessageActivity
 from models.location import Location
@@ -19,8 +19,7 @@ from app.processor.processing import (
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-# Ensure any newly-added tables (e.g. activities / message_activities) exist.
-Base.metadata.create_all(engine)
+# Schema is managed by Alembic (`alembic upgrade head`), not this script.
 
 with Session(engine) as session:
     session.query(MessageActivity).delete()
