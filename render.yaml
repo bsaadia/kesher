@@ -12,7 +12,7 @@ services:
     runtime: python
     region: frankfurt
     plan: starter
-    branch: main
+    branch: master
     buildCommand: "pip install -r requirements.txt && alembic upgrade head"
     startCommand: "gunicorn -c gunicorn.conf.py wsgi:app"
     healthCheckPath: /
