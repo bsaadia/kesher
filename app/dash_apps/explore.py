@@ -651,7 +651,7 @@ def init_explore_dash(server):
                                     style={"fontSize": "1.7rem", "margin": "0", "fontFamily": theme.FONT_SANS}),
                             html.P(
                                 [
-                                    "Mapping IDF Telegram messaging across six fronts since October 7th",
+                                    "Mapping Israel Defense Forces (IDF) Telegram messaging across six fronts since October 7th",
                                     html.Span(" · ", style={"margin": "0 0.4rem"}),
                                     html.Span(f"Last updated: {state['max_date'].strftime('%d %b %Y, %H:%M UTC')}",
                                               id="last-updated-text"),
