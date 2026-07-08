@@ -4,8 +4,10 @@ venv/
 __pycache__/
 db.sqlite3
 .env
+.env.production
 session.session
 cache/
 .DS_Store
 scrap/use_scraper.py
 scrap/data/
+logs/
