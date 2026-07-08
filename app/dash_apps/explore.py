@@ -593,12 +593,12 @@ def init_explore_dash(server):
                            "alignItems": "flex-start"},
                     children=[
                         html.Div([
-                            html.H1("Kesher - קשר", style={"fontSize": "1.4rem", "margin": "0"}),
+                            html.H1("Kesher - קשר", style={"fontSize": "1.7rem", "margin": "0"}),
                             html.P(
                                 [
                                     "Mapping IDF Telegram messaging across six fronts since October 7th",
                                     html.Span(" · ", style={"margin": "0 0.4rem"}),
-                                    html.Span(f"Last updated: {state['max_date'].strftime('%d %b %Y')}",
+                                    html.Span(f"Last updated: {state['max_date'].strftime('%d %b %Y, %H:%M UTC')}",
                                               id="last-updated-text"),
                                 ],
                                 style={"fontSize": "0.85rem", "color": "#888", "margin": "0.25rem 0 0"},
@@ -790,7 +790,7 @@ def init_explore_dash(server):
             latest = session.execute(select(func.max(Message.timestamp))).scalar()
         if latest is None:
             raise PreventUpdate
-        return f"Last updated: {pd.Timestamp(latest).strftime('%d %b %Y')}"
+        return f"Last updated: {pd.Timestamp(latest).strftime('%d %b %Y, %H:%M UTC')}"
 
     @dash_app.callback(
         Output("location-messages-panel", "children"),

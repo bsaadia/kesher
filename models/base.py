@@ -12,7 +12,13 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///db.sqlite3")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
+# Without connect_timeout, a psycopg2 connect() can hang indefinitely if the
+# TCP handshake never completes (e.g. a stale route right after the machine
+# wakes from sleep) — that hung an hourly-update run for over an hour and
+# blocked every subsequent run behind its lock file.
+connect_args = {"connect_timeout": 10} if DATABASE_URL.startswith("postgresql://") else {}
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300, connect_args=connect_args)
 
 class Base(DeclarativeBase):
     pass

@@ -46,10 +46,32 @@ source "$ENV_FILE"
 set +a
 
 cd "$REPO_ROOT"
+
+# --- retry with backoff: launchd sometimes fires this job during a brief
+# macOS DarkWake maintenance window (e.g. right after the lid was closed),
+# where the CPU is up but WiFi/DNS haven't reconnected yet. A first-attempt
+# DNS failure in that situation is transient, so give the network a few
+# chances to come back before giving up for the hour. ---
+RETRY_DELAYS=(5 15 30)
+attempt=1
+status=0
 if "$PYTHON_BIN" -m app.update_db >> "$LOG_FILE" 2>&1; then
     log "OK hourly update finished"
 else
     status=$?
-    log "FAIL hourly update exited with status $status"
-    exit "$status"
+    for delay in "${RETRY_DELAYS[@]}"; do
+        attempt=$((attempt + 1))
+        log "RETRY hourly update attempt $attempt after ${delay}s (previous exit status $status)"
+        sleep "$delay"
+        if "$PYTHON_BIN" -m app.update_db >> "$LOG_FILE" 2>&1; then
+            log "OK hourly update finished (attempt $attempt)"
+            status=0
+            break
+        fi
+        status=$?
+    done
+    if [ "$status" -ne 0 ]; then
+        log "FAIL hourly update exited with status $status after $attempt attempts"
+        exit "$status"
+    fi
 fi
