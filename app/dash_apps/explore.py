@@ -7,6 +7,7 @@ toggle. Built to be extended with further exploratory views.
 """
 
 import math
+import threading
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from dash import Dash, dcc, html, Input, Output, Patch
 from dash.exceptions import PreventUpdate
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker
 
 from models.base import engine
@@ -517,229 +518,279 @@ def init_explore_dash(server):
         title="Explore — Kesher",
     )
 
-    # Load once to seed the date-picker bounds; callbacks reload live so new
-    # messages from the pipeline show up on refresh. Outer joins mean every
-    # message is present in both seeds regardless of tagging, so either can
-    # supply the overall date bounds.
-    seed_front = load_data("front")
-    if seed_front.empty:
-        min_date = max_date = pd.Timestamp.today().normalize()
-    else:
-        min_date, max_date = seed_front["timestamp"].min(), seed_front["timestamp"].max()
+    # Full-history bounds/figures, cached per worker process and rebuilt only
+    # when new messages have actually landed (see _refresh_view_state_if_stale).
+    # This is what dash_app.layout reads from on every fresh page load, so a
+    # browser refresh reflects the hourly scraper sync without needing the
+    # whole Gunicorn worker to restart.
+    _view_state = {}
+    _view_state_lock = threading.Lock()
 
-    total_days = max(_days_between(min_date, max_date), 1)  # RangeSlider needs min < max
-    day_marks = _build_day_marks(min_date, max_date)
+    def _build_view_state():
+        # Outer joins mean every message is present in both seeds regardless
+        # of tagging, so either can supply the overall date bounds.
+        seed_front = load_data("front")
+        if seed_front.empty:
+            min_date = max_date = pd.Timestamp.today().normalize()
+        else:
+            min_date, max_date = seed_front["timestamp"].min(), seed_front["timestamp"].max()
 
-    # Fixed once from the full (unfiltered) dataset so a group's color never
-    # shifts depending on which subset the current date range happens to show.
-    front_color_map = _build_color_map(seed_front["front"].dropna().unique())
+        total_days = max(_days_between(min_date, max_date), 1)  # RangeSlider needs min < max
+        day_marks = _build_day_marks(min_date, max_date)
 
-    # Every chart's front order — by descending total message count, not
-    # alphabetical — fixed once so a front's rank stays stable across views
-    # (and doesn't reshuffle as a filtered subset changes).
-    front_order = _order_by_count(seed_front, "front")
+        # Derived fresh from the same full (unfiltered) dataset each rebuild, so
+        # a group's color/rank stays stable *within* a view and only shifts
+        # between rebuilds (i.e. between page loads), not while one is open.
+        front_color_map = _build_color_map(seed_front["front"].dropna().unique())
+        front_order = _order_by_count(seed_front, "front")
 
-    # Built once at boot: the map is a static full-history density with no
-    # controls driving it. The comparison/facet figures below are also seeded
-    # here (from the same data, at the controls' default values) so the page
-    # renders populated on first load without needing their callbacks to
-    # fire — those callbacks (prevent_initial_call=True) only run in
-    # response to actual user interaction from then on.
-    loc_data = load_location_data()
-    map_figure = build_map_figure(loc_data)
-    comparison_figure = build_comparison_figure(seed_front, loc_data, "week", front_order, front_color_map)
-    front_facet_figure = build_front_facet_figure(seed_front, loc_data, min_date.date(), max_date.date(),
-                                                   "week", front_order)
+        # The map is a static full-history density with no controls driving it.
+        # The comparison/facet figures below are also seeded here (from the same
+        # data, at the controls' default values) so the page renders populated
+        # on first load without needing their callbacks to fire — those
+        # callbacks (prevent_initial_call=True) only run in response to actual
+        # user interaction from then on.
+        loc_data = load_location_data()
+        map_figure = build_map_figure(loc_data)
+        comparison_figure = build_comparison_figure(seed_front, loc_data, "week", front_order, front_color_map)
+        front_facet_figure = build_front_facet_figure(seed_front, loc_data, min_date.date(), max_date.date(),
+                                                       "week", front_order)
+        return {
+            "min_date": min_date, "max_date": max_date,
+            "total_days": total_days, "day_marks": day_marks,
+            "front_color_map": front_color_map, "front_order": front_order,
+            "map_figure": map_figure, "comparison_figure": comparison_figure,
+            "front_facet_figure": front_facet_figure,
+        }
 
-    dash_app.layout = html.Div(
-        style={"font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-               "padding": "1.5rem", "maxWidth": "1200px", "margin": "0 auto"},
-        children=[
-            html.Div(
-                style={"display": "flex", "justifyContent": "space-between",
-                       "alignItems": "flex-start"},
-                children=[
-                    html.Div([
-                        html.H1("Kesher - קשר", style={"fontSize": "1.4rem", "margin": "0"}),
-                        html.P(
-                            [
-                                "Mapping IDF Telegram messaging across six fronts since October 7th",
-                                html.Span(" · ", style={"margin": "0 0.4rem"}),
-                                f"Last updated: {max_date.strftime('%d %b %Y')}",
-                            ],
-                            style={"fontSize": "0.85rem", "color": "#888", "margin": "0.25rem 0 0"},
-                        ),
-                    ]),
-                    html.Div(className="info-icon-wrapper info-icon-wrapper--corner", children=[
-                        html.Div("i", className="info-icon"),
-                        html.Div(className="info-popover", children=[
-                            html.P(
-                                "Kesher (קשר, \"connection\") visualizes messaging activity from the "
-                                "IDF's official Telegram channel across six fronts of the war that began "
-                                "on October 7th: Gaza, Judea & Samaria, Lebanon, Syria, Yemen, and Iran. "
-                                "The app maps what was communicated, when, and where, and lets you "
-                                "explore how the pace and geography of that messaging shifted over time.",
-                                style={"margin": "0 0 0.75rem"},
-                            ),
+    def _refresh_view_state_if_stale():
+        """Rebuilds the cached bounds/figures only if MAX(timestamp) has moved
+        since the last build — a cheap indexed check — so concurrent requests
+        and repeat page loads within the same hour reuse the cached build
+        instead of each re-querying/re-plotting the whole message history.
+        """
+        with Session() as session:
+            latest = session.execute(select(func.max(Message.timestamp))).scalar()
+        with _view_state_lock:
+            if _view_state.get("db_max_timestamp") == latest and _view_state:
+                return
+            state = _build_view_state()
+            state["db_max_timestamp"] = latest
+            _view_state.clear()
+            _view_state.update(state)
+
+    _refresh_view_state_if_stale()  # pay the build cost once at worker boot, not on the first request
+
+    def serve_layout():
+        _refresh_view_state_if_stale()
+        state = _view_state
+        return html.Div(
+            style={"font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                   "padding": "1.5rem", "maxWidth": "1200px", "margin": "0 auto"},
+            children=[
+                html.Div(
+                    style={"display": "flex", "justifyContent": "space-between",
+                           "alignItems": "flex-start"},
+                    children=[
+                        html.Div([
+                            html.H1("Kesher - קשר", style={"fontSize": "1.4rem", "margin": "0"}),
                             html.P(
                                 [
-                                    "All data comes from a single source: the IDF's official Telegram "
-                                    "channel, in Hebrew. Messages are scraped, then matched against a "
-                                    "gazetteer of about 208 named locations across the six fronts to "
-                                    "assign coordinates. See ",
-                                    html.A("the full methodology", href="/methodology"),
-                                    " for how this shapes what the data can and can't tell you.",
+                                    "Mapping IDF Telegram messaging across six fronts since October 7th",
+                                    html.Span(" · ", style={"margin": "0 0.4rem"}),
+                                    html.Span(f"Last updated: {state['max_date'].strftime('%d %b %Y')}",
+                                              id="last-updated-text"),
                                 ],
-                                style={"margin": "0 0 0.75rem"},
+                                style={"fontSize": "0.85rem", "color": "#888", "margin": "0.25rem 0 0"},
                             ),
-                            html.P(
-                                "Kesher is also a personal data engineering project, built end to end "
-                                "(scraping, geospatial tagging, and visualization) as a hands-on "
-                                "exploration of turning a messy real-world data source into something "
-                                "legible and explorable.",
-                                style={"margin": "0"},
-                            ),
+                            # Polls the DB for the true latest message timestamp so this stays
+                            # accurate across the hourly scraper sync, independent of how long
+                            # the Dash worker (and its once-at-boot seed data) has been running.
+                            dcc.Interval(id="last-updated-interval", interval=10 * 60 * 1000),
                         ]),
-                    ]),
-                ],
-            ),
-
-            html.H2("Where messages are located", style={"fontSize": "1.2rem", "margin": "1.25rem 0 0.5rem"}),
-            html.P("One marker per location, coloured by total message count across the whole history. "
-                   "Click a marker to see its messages.",
-                   style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
-            html.Div(
-                style={"display": "flex", "gap": "1.25rem", "alignItems": "flex-start"},
-                children=[
-                    dcc.Graph(id="map-graph", figure=map_figure,
-                              style={"height": "650px", "flex": "2", "minWidth": "0"},
-                              config={"scrollZoom": True}),
-                    dcc.Loading(
-                        type="circle",
-                        parent_style={"flex": "1", "minWidth": "280px", "maxWidth": "380px"},
-                        children=html.Div(
-                            id="location-messages-panel",
-                            children=html.P("Click a marker to see messages for that location.",
-                                             style={"color": "#888", "fontSize": "0.85rem"}),
-                            style={"height": "650px", "overflowY": "auto",
-                                   "border": "1px solid #ddd", "borderRadius": "8px",
-                                   "padding": "1rem"},
-                        ),
-                    ),
-                ],
-            ),
-
-            html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
-            html.H2("Front comparison", style={"fontSize": "1.2rem"}),
-            html.P("Messages, distinct locations, and the messages-per-location ratio for every "
-                   "front, all on the same time axis — the time frame above and the slider below "
-                   "both drive (and follow) zooming/panning on the chart.",
-                   style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
-
-            # Sticky once scrolled past the map above (its normal in-flow spot
-            # is right here); scrolling back up past that spot un-sticks it,
-            # so it only overlays content once the map itself is out of view.
-            html.Div(
-                style={"position": "sticky", "top": "0", "zIndex": "10",
-                       "backgroundColor": "#fff", "paddingTop": "0.5rem",
-                       "paddingBottom": "0.75rem", "borderBottom": "1px solid #eee"},
-                children=[
-                    html.Div(
-                        style={"display": "flex", "gap": "2rem", "flexWrap": "wrap",
-                               "alignItems": "center", "margin": "0 0 0.5rem"},
-                        children=[
-                            html.Div([
-                                html.Label("Time frame", style={"display": "block",
-                                                                "fontSize": "0.8rem", "color": "#888"}),
-                                html.Div(
-                                    style={"display": "flex", "gap": "0.5rem", "alignItems": "center"},
-                                    children=[
-                                        dcc.DatePickerRange(
-                                            id="date-range",
-                                            min_date_allowed=min_date.date(),
-                                            max_date_allowed=max_date.date(),
-                                            start_date=min_date.date(),
-                                            end_date=max_date.date(),
-                                            display_format="D MMM YYYY",
-                                        ),
-                                        html.Button("Reset", id="reset-date-range",
-                                                    style={"fontSize": "0.8rem", "padding": "0.35rem 0.6rem"}),
+                        html.Div(className="info-icon-wrapper info-icon-wrapper--corner", children=[
+                            html.Div("i", className="info-icon"),
+                            html.Div(className="info-popover", children=[
+                                html.P(
+                                    "Kesher (קשר, \"connection\") visualizes messaging activity from the "
+                                    "IDF's official Telegram channel across six fronts of the war that began "
+                                    "on October 7th: Gaza, Judea & Samaria, Lebanon, Syria, Yemen, and Iran. "
+                                    "The app maps what was communicated, when, and where, and lets you "
+                                    "explore how the pace and geography of that messaging shifted over time.",
+                                    style={"margin": "0 0 0.75rem"},
+                                ),
+                                html.P(
+                                    [
+                                        "All data comes from a single source: the IDF's official Telegram "
+                                        "channel, in Hebrew. Messages are scraped, then matched against a "
+                                        "gazetteer of about 208 named locations across the six fronts to "
+                                        "assign coordinates. See ",
+                                        html.A("the full methodology", href="/methodology"),
+                                        " for how this shapes what the data can and can't tell you.",
                                     ],
+                                    style={"margin": "0 0 0.75rem"},
+                                ),
+                                html.P(
+                                    "Kesher is also a personal data engineering project, built end to end "
+                                    "(scraping, geospatial tagging, and visualization) as a hands-on "
+                                    "exploration of turning a messy real-world data source into something "
+                                    "legible and explorable.",
+                                    style={"margin": "0"},
                                 ),
                             ]),
-                            html.Div([
-                                html.Label("Granularity", style={"display": "block",
-                                                                 "fontSize": "0.8rem", "color": "#888"}),
-                                dcc.RadioItems(
-                                    id="granularity",
-                                    options=[{"label": g.title(), "value": g}
-                                             for g in ("day", "week", "month")],
-                                    value="week",
-                                    inline=True,
-                                    labelStyle={"marginRight": "0.75rem"},
-                                ),
-                            ]),
-                        ],
-                    ),
-                    dcc.RangeSlider(
-                        id="time-slider",
-                        min=0, max=total_days,
-                        value=[0, total_days],
-                        marks=day_marks,
-                        step=1,
-                        allowCross=False,
-                    ),
-                ],
-            ),
-            html.Div(
-                style={"display": "flex", "gap": "1.5rem", "flexWrap": "wrap", "margin": "0.75rem 0 0.5rem"},
-                children=[
-                    _plot_info("Messages per front",
-                               "Distinct messages per front, stacked and bucketed by the granularity "
-                               "control above. Always plots the full history; the time frame picker "
-                               "and slider control which part of the x-axis is visible, not what's "
-                               "included."),
-                    _plot_info("Distinct locations per front",
-                               "Distinct locations mentioned per front, stacked and bucketed the same "
-                               "way as the messages chart above it."),
-                    _plot_info("Messages-per-location ratio",
-                               "Front by period heatmap of messages divided by distinct locations "
-                               "mentioned. Darker cells mean coverage was concentrated on fewer places. "
-                               "The vertical line height encodes the raw message count for that cell."),
-                ],
-            ),
-            dcc.Graph(id="comparison-graph", figure=comparison_figure),
+                        ]),
+                    ],
+                ),
 
-            html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
-            html.H2("Messages vs. locations per front-period", style={"fontSize": "1.2rem"}),
-            html.P("Each dot is one period (day/week/month, per the granularity control above) "
-                   "for that front within the selected time frame; colour marks when it occurred. "
-                   "Axes are fixed to the same scale across fronts for direct comparison.",
-                   style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
-            _plot_info("Distinct locations vs. messages, per front-period",
-                       "One dot per period (day, week, or month, per the granularity control) for "
-                       "that front. X axis is distinct locations mentioned, y axis is message count. "
-                       "Colour marks when the period occurred. Axes are fixed to the same scale across "
-                       "fronts for direct comparison."),
-            dcc.Graph(id="front-facet-scatter", figure=front_facet_figure),
+                html.H2("Where messages are located", style={"fontSize": "1.2rem", "margin": "1.25rem 0 0.5rem"}),
+                html.P("One marker per location, coloured by total message count across the whole history. "
+                       "Click a marker to see its messages.",
+                       style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+                html.Div(
+                    style={"display": "flex", "gap": "1.25rem", "alignItems": "flex-start"},
+                    children=[
+                        dcc.Graph(id="map-graph", figure=state["map_figure"],
+                                  style={"height": "650px", "flex": "2", "minWidth": "0"},
+                                  config={"scrollZoom": True}),
+                        dcc.Loading(
+                            type="circle",
+                            parent_style={"flex": "1", "minWidth": "280px", "maxWidth": "380px"},
+                            children=html.Div(
+                                id="location-messages-panel",
+                                children=html.P("Click a marker to see messages for that location.",
+                                                 style={"color": "#888", "fontSize": "0.85rem"}),
+                                style={"height": "650px", "overflowY": "auto",
+                                       "border": "1px solid #ddd", "borderRadius": "8px",
+                                       "padding": "1rem"},
+                            ),
+                        ),
+                    ],
+                ),
 
-            html.Footer(
-                style={"marginTop": "3rem", "paddingTop": "1rem", "borderTop": "1px solid #ddd",
-                       "textAlign": "center", "fontSize": "0.75rem", "color": "#888"},
-                children=[
-                    html.A("Methodology", href="/methodology",
-                           style={"color": "#888", "textDecoration": "none"}),
-                    html.Span(" · ", style={"margin": "0 0.4rem"}),
-                    html.Span([
-                        "Built by ",
-                        html.A("Benjamin Saadia", href="https://www.linkedin.com/in/benjaminsaadia/",
-                               target="_blank", rel="noopener noreferrer",
+                html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
+                html.H2("Front comparison", style={"fontSize": "1.2rem"}),
+                html.P("Messages, distinct locations, and the messages-per-location ratio for every "
+                       "front, all on the same time axis — the time frame above and the slider below "
+                       "both drive (and follow) zooming/panning on the chart.",
+                       style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+
+                # Sticky once scrolled past the map above (its normal in-flow spot
+                # is right here); scrolling back up past that spot un-sticks it,
+                # so it only overlays content once the map itself is out of view.
+                html.Div(
+                    style={"position": "sticky", "top": "0", "zIndex": "10",
+                           "backgroundColor": "#fff", "paddingTop": "0.5rem",
+                           "paddingBottom": "0.75rem", "borderBottom": "1px solid #eee"},
+                    children=[
+                        html.Div(
+                            style={"display": "flex", "gap": "2rem", "flexWrap": "wrap",
+                                   "alignItems": "center", "margin": "0 0 0.5rem"},
+                            children=[
+                                html.Div([
+                                    html.Label("Time frame", style={"display": "block",
+                                                                    "fontSize": "0.8rem", "color": "#888"}),
+                                    html.Div(
+                                        style={"display": "flex", "gap": "0.5rem", "alignItems": "center"},
+                                        children=[
+                                            dcc.DatePickerRange(
+                                                id="date-range",
+                                                min_date_allowed=state["min_date"].date(),
+                                                max_date_allowed=state["max_date"].date(),
+                                                start_date=state["min_date"].date(),
+                                                end_date=state["max_date"].date(),
+                                                display_format="D MMM YYYY",
+                                            ),
+                                            html.Button("Reset", id="reset-date-range",
+                                                        style={"fontSize": "0.8rem", "padding": "0.35rem 0.6rem"}),
+                                        ],
+                                    ),
+                                ]),
+                                html.Div([
+                                    html.Label("Granularity", style={"display": "block",
+                                                                     "fontSize": "0.8rem", "color": "#888"}),
+                                    dcc.RadioItems(
+                                        id="granularity",
+                                        options=[{"label": g.title(), "value": g}
+                                                 for g in ("day", "week", "month")],
+                                        value="week",
+                                        inline=True,
+                                        labelStyle={"marginRight": "0.75rem"},
+                                    ),
+                                ]),
+                            ],
+                        ),
+                        dcc.RangeSlider(
+                            id="time-slider",
+                            min=0, max=state["total_days"],
+                            value=[0, state["total_days"]],
+                            marks=state["day_marks"],
+                            step=1,
+                            allowCross=False,
+                        ),
+                    ],
+                ),
+                html.Div(
+                    style={"display": "flex", "gap": "1.5rem", "flexWrap": "wrap", "margin": "0.75rem 0 0.5rem"},
+                    children=[
+                        _plot_info("Messages per front",
+                                   "Distinct messages per front, stacked and bucketed by the granularity "
+                                   "control above. Always plots the full history; the time frame picker "
+                                   "and slider control which part of the x-axis is visible, not what's "
+                                   "included."),
+                        _plot_info("Distinct locations per front",
+                                   "Distinct locations mentioned per front, stacked and bucketed the same "
+                                   "way as the messages chart above it."),
+                        _plot_info("Messages-per-location ratio",
+                                   "Front by period heatmap of messages divided by distinct locations "
+                                   "mentioned. Darker cells mean coverage was concentrated on fewer places. "
+                                   "The vertical line height encodes the raw message count for that cell."),
+                    ],
+                ),
+                dcc.Graph(id="comparison-graph", figure=state["comparison_figure"]),
+
+                html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
+                html.H2("Messages vs. locations per front-period", style={"fontSize": "1.2rem"}),
+                html.P("Each dot is one period (day/week/month, per the granularity control above) "
+                       "for that front within the selected time frame; colour marks when it occurred. "
+                       "Axes are fixed to the same scale across fronts for direct comparison.",
+                       style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+                _plot_info("Distinct locations vs. messages, per front-period",
+                           "One dot per period (day, week, or month, per the granularity control) for "
+                           "that front. X axis is distinct locations mentioned, y axis is message count. "
+                           "Colour marks when the period occurred. Axes are fixed to the same scale across "
+                           "fronts for direct comparison."),
+                dcc.Graph(id="front-facet-scatter", figure=state["front_facet_figure"]),
+
+                html.Footer(
+                    style={"marginTop": "3rem", "paddingTop": "1rem", "borderTop": "1px solid #ddd",
+                           "textAlign": "center", "fontSize": "0.75rem", "color": "#888"},
+                    children=[
+                        html.A("Methodology", href="/methodology",
                                style={"color": "#888", "textDecoration": "none"}),
-                    ]),
-                ],
-            ),
-        ],
+                        html.Span(" · ", style={"margin": "0 0.4rem"}),
+                        html.Span([
+                            "Built by ",
+                            html.A("Benjamin Saadia", href="https://www.linkedin.com/in/benjaminsaadia/",
+                                   target="_blank", rel="noopener noreferrer",
+                                   style={"color": "#888", "textDecoration": "none"}),
+                        ]),
+                    ],
+                ),
+            ],
+        )
+
+    dash_app.layout = serve_layout
+
+    @dash_app.callback(
+        Output("last-updated-text", "children"),
+        Input("last-updated-interval", "n_intervals"),
     )
+    def update_last_updated_text(_):
+        with Session() as session:
+            latest = session.execute(select(func.max(Message.timestamp))).scalar()
+        if latest is None:
+            raise PreventUpdate
+        return f"Last updated: {pd.Timestamp(latest).strftime('%d %b %Y')}"
 
     @dash_app.callback(
         Output("location-messages-panel", "children"),
@@ -762,7 +813,7 @@ def init_explore_dash(server):
     )
     def update_comparison_graph(granularity):
         return build_comparison_figure(load_data("front"), load_location_data(),
-                                        granularity, front_order, front_color_map)
+                                        granularity, _view_state["front_order"], _view_state["front_color_map"])
 
     # Unlike the comparison chart, this one has no time axis to zoom — so
     # the date-range/slider (they're kept in sync with each other below)
@@ -776,7 +827,7 @@ def init_explore_dash(server):
     )
     def update_front_facet_graph(start_date, end_date, granularity):
         return build_front_facet_figure(load_data("front"), load_location_data(),
-                                         start_date, end_date, granularity, front_order)
+                                         start_date, end_date, granularity, _view_state["front_order"])
 
     # Slider <-> date-picker sync for the comparison chart's time-window
     # scrubber. Circular by design (Dash's supported "circular callback"
@@ -791,7 +842,8 @@ def init_explore_dash(server):
     )
     def slider_to_dates(value):
         start_offset, end_offset = value
-        return _day_offset_to_date(min_date, start_offset), _day_offset_to_date(min_date, end_offset)
+        base = _view_state["min_date"]
+        return _day_offset_to_date(base, start_offset), _day_offset_to_date(base, end_offset)
 
     @dash_app.callback(
         Output("time-slider", "value"),
@@ -800,7 +852,8 @@ def init_explore_dash(server):
         prevent_initial_call=True,
     )
     def dates_to_slider(start_date, end_date):
-        return [_days_between(min_date, start_date), _days_between(min_date, end_date)]
+        base = _view_state["min_date"]
+        return [_days_between(base, start_date), _days_between(base, end_date)]
 
     @dash_app.callback(
         Output("date-range", "start_date", allow_duplicate=True),
@@ -809,7 +862,7 @@ def init_explore_dash(server):
         prevent_initial_call=True,
     )
     def reset_date_range(n_clicks):
-        return min_date.date().isoformat(), max_date.date().isoformat()
+        return _view_state["min_date"].date().isoformat(), _view_state["max_date"].date().isoformat()
 
     # The comparison chart always plots the full history — the slider/picker
     # above just move its visible x-axis window, and the chart's own
@@ -842,7 +895,7 @@ def init_explore_dash(server):
             if lo is not None and hi is not None:
                 return pd.Timestamp(lo).date().isoformat(), pd.Timestamp(hi).date().isoformat()
             if relayout_data.get(f"{prefix}.autorange"):
-                return min_date.date().isoformat(), max_date.date().isoformat()
+                return _view_state["min_date"].date().isoformat(), _view_state["max_date"].date().isoformat()
         raise PreventUpdate
 
     return dash_app
