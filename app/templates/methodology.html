@@ -3,20 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Methodology — Kesher</title>
+  <title>Methodology</title>
   <style>
+    /* Palette mirrors app/theme.py — kept in sync by hand, this file is
+       outside the Dash asset pipeline and can't import Python constants. */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: #333;
-      background: #fff;
+      color: #2E2C24;
+      background: #F5EFE1;
     }
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 1.5rem;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #C9BFA0;
+      background: #FBF7EC;
     }
     header h1 {
       font-size: 1.4rem;
@@ -24,10 +27,10 @@
     }
     header a {
       font-size: 0.85rem;
-      color: #888;
+      color: #5B6B44;
       text-decoration: none;
     }
-    header a:hover { color: #333; }
+    header a:hover { color: #A85C32; }
     main {
       max-width: 700px;
       margin: 0 auto;
@@ -36,11 +39,13 @@
     main h2 {
       font-size: 1.1rem;
       margin: 1.5rem 0 0.5rem;
+      color: #2E2C24;
     }
     main p {
       font-size: 0.95rem;
       line-height: 1.6;
       margin: 0 0 1rem;
+      color: #2E2C24;
     }
   </style>
 </head>
@@ -53,13 +58,13 @@
     <h2>What this data is, and isn't</h2>
     <p>
       Every marker, timeline, and chart on this site represents a message the IDF chose to
-      publish on its official Telegram channel, not an independent record of events on the
+      publish on its official Telegram channel (@idf_telegram), not an independent record of events on the
       ground. The IDF decides what to announce, when to announce it, and how to phrase it.
       That means the same real-world event can be over-represented (multiple messages about
       one strike), under-represented (no announcement at all), or framed in ways that shape
       how it reads. This app maps messaging activity. It should be read as a lens on
       communication strategy and operational tempo, not as a casualty count or ground-truth
-      record of the war.
+      record of the war. For full disclosure, the messages associated to each marker are visible in the side panel.
     </p>
 
     <h2>Collection</h2>
@@ -67,12 +72,12 @@
       Messages are scraped directly from the IDF's official Telegram channel using an
       authenticated Telegram client. As of this writing, the underlying dataset includes
       roughly 17,000 raw scraped messages, of which about 3,200 have been geographically
-      tagged for analysis.
+      tagged for analysis. Every hour, the scraper checks for new messages and adds them to the dataset.
     </p>
 
     <h2>Geotagging</h2>
     <p>
-      Locations are assigned using a gazetteer of about 208 named places across the six
+      Locations are assigned using a table of about 208 named places across the six
       fronts, with Hebrew, Arabic, and English name variants. Hebrew text is normalized by
       stripping common prefixes (ה, ו, ב, כ, ל, ש) before matching against the gazetteer.
       This is a deterministic, rule-based approach rather than a per-message AI
@@ -80,7 +85,8 @@
       running it on the same raw data will get the same tags. Where a message could
       plausibly reference more than one location, the system errs toward tagging it to all
       plausible locations rather than guessing a single "best" one, since over-tagging is a
-      smaller distortion than silently dropping a real mention.
+      smaller distortion than silently dropping a real mention. Not all locations mentioned in
+      messages are necessarily in the locations table, so some messages are left untagged.
     </p>
 
     <h2>Reading the ratios</h2>
@@ -106,8 +112,9 @@
 
     <h2>What's next</h2>
     <p>
-      Future versions plan to break messaging down by type (air, ground, projectile,
-      casualties and hostages) once the methodology for that classification is solid enough
+      Future versions plan to break messaging down by activity type 
+      (e.g., airstrike vs. ground operation) once the methodology for 
+      that classification is solid enough
       to publish with confidence.
     </p>
   </main>

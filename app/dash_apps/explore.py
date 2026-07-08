@@ -25,6 +25,8 @@ from models.location import Location
 from models.activity import Activity
 from models.associations import MessageLocation, MessageActivity
 
+from app import theme
+
 # Own session factory so the dashboard stays decoupled from the request-scoped
 # g.db_session lifecycle in app/__init__.py.
 Session = sessionmaker(bind=engine)
@@ -41,11 +43,29 @@ _CHANNEL_DISPLAY_NAMES = {"-1001155294424": "צה״ל - הערוץ הרשמי"}
 _MONTH = "ME" if tuple(map(int, pd.__version__.split(".")[:2])) >= (2, 2) else "M"
 FREQ = {"day": "D", "week": "W", "month": _MONTH}
 
+def _apply_theme(fig):
+    """Applies the app's shared visual theme (canvas background, font,
+    gridlines) to a Plotly figure, so charts read as part of the same design
+    system as the surrounding page rather than Plotly's default white canvas.
+    Purely cosmetic — no trace data, layout structure, or axis logic changes."""
+    fig.update_layout(**theme.PLOTLY_LAYOUT)
+    fig.update_xaxes(gridcolor=theme.BORDER, zerolinecolor=theme.BORDER, linecolor=theme.BORDER)
+    fig.update_yaxes(gridcolor=theme.BORDER, zerolinecolor=theme.BORDER, linecolor=theme.BORDER)
+    # Hover text (e.g. the map's Hebrew/Arabic location names) is set apart
+    # from the chart's monospace chrome font — sans-serif, like the rest of
+    # the app's non-Latin text.
+    fig.update_layout(hoverlabel=dict(
+        font=dict(family=theme.FONT_SANS, color=theme.TEXT_PRIMARY),
+        bgcolor=theme.BG_PANEL, bordercolor=theme.BORDER,
+    ))
+    return fig
+
+
 # Empty-state figure so callbacks always return a valid figure.
-_EMPTY_FIG = px.line(template="plotly_white").update_layout(
+_EMPTY_FIG = _apply_theme(px.line(template="plotly_white").update_layout(
     annotations=[dict(text="No messages in range", showarrow=False,
-                      font=dict(size=16, color="#888"))]
-)
+                      font=dict(size=16, color=theme.TEXT_MUTED))]
+))
 
 # Roughly centers the Israel/Gaza/Lebanon/Syria area covered by the gazetteer.
 _MAP_CENTER = {"lat": 31.5, "lon": 35.0}
@@ -63,8 +83,9 @@ _EMPTY_MAP_FIG.update_layout(
     margin=dict(l=0, r=0, t=0, b=0),
     annotations=[dict(text="No messages in range", showarrow=False,
                       xref="paper", yref="paper", x=0.5, y=0.5,
-                      font=dict(size=16, color="#333"))],
+                      font=dict(size=16, color=theme.TEXT_PRIMARY))],
 )
+_apply_theme(_EMPTY_MAP_FIG)
 
 
 def load_data(group_by: str) -> pd.DataFrame:
@@ -104,7 +125,7 @@ def _plot_info(label: str, description: str):
     return html.Div(
         style={"display": "flex", "alignItems": "center", "gap": "0.4rem"},
         children=[
-            html.Span(label, style={"fontSize": "0.85rem", "fontWeight": "600", "color": "#555"}),
+            html.Span(label, style={"fontSize": "0.85rem", "fontWeight": "600", "color": theme.TEXT_MUTED}),
             html.Div(className="info-icon-wrapper", children=[
                 html.Div("i", className="info-icon info-icon--sm"),
                 html.Div(description, className="info-popover info-popover--sm"),
@@ -114,11 +135,11 @@ def _plot_info(label: str, description: str):
 
 
 def _build_color_map(values) -> dict:
-    """Assign each value a fixed color from a repeating palette, keyed by
-    sorted value so the mapping is stable regardless of which subset of
-    values is present in any given filtered view."""
-    from itertools import cycle
-    return dict(zip(sorted(values), cycle(px.colors.qualitative.Plotly)))
+    """Assign each front its fixed, canonical color from theme.FRONT_COLORS;
+    any value not in that mapping (unexpected/new front data) falls back to
+    a neutral color so the chart still renders instead of raising a
+    KeyError."""
+    return {v: theme.FRONT_COLORS.get(v, theme.FRONT_COLOR_FALLBACK) for v in values}
 
 
 def _order_by_count(df: pd.DataFrame, group_col: str, id_col: str = "id") -> list:
@@ -208,11 +229,13 @@ def build_messages_panel(title: str, messages_df: pd.DataFrame):
     ``messages_df`` is expected most-recent-first (as returned by
     ``load_messages_for_location``/``load_recent_messages``); order is
     preserved, not re-sorted."""
-    header = html.H3(title, style={"fontSize": "1rem", "margin": "0 0 0.75rem"})
+    # Sans-serif: title may embed a Hebrew location name (name_he), which
+    # doesn't render well in the app's monospace face.
+    header = html.H3(title, style={"fontSize": "1rem", "margin": "0 0 0.75rem", "fontFamily": theme.FONT_SANS})
 
     if messages_df.empty:
         return [header, html.P("No messages found.",
-                                style={"color": "#888", "fontSize": "0.85rem"})]
+                                style={"color": theme.TEXT_MUTED, "fontSize": "0.85rem"})]
 
     cards = []
     for i, row in enumerate(messages_df.itertuples()):
@@ -222,17 +245,20 @@ def build_messages_panel(title: str, messages_df: pd.DataFrame):
                     html.Span(row.timestamp.strftime("%d %b %Y, %H:%M"),
                               style={"fontWeight": "600", "fontSize": "0.8rem"}),
                     html.Span(f"  ·  {_CHANNEL_DISPLAY_NAMES.get(row.channel, row.channel)}",
-                              style={"color": "#888", "fontSize": "0.75rem"}),
+                              style={"color": theme.TEXT_MUTED, "fontSize": "0.75rem",
+                                     "fontFamily": theme.FONT_SANS}),
                 ], style={"marginBottom": "0.4rem"}),
+                # Message text is scraped Hebrew (with occasional Arabic/English) —
+                # sans-serif, not the app's default monospace, for readability.
                 html.Div(row.text, dir="auto",
-                         style={"whiteSpace": "pre-wrap", "fontSize": "0.9rem", "lineHeight": "1.4"}),
+                         style={"whiteSpace": "pre-wrap", "fontSize": "0.9rem", "lineHeight": "1.4",
+                                "fontFamily": theme.FONT_SANS}),
             ],
             style={
                 "padding": "0.75rem 0.9rem",
                 "marginBottom": "0.75rem",
-                "backgroundColor": "#f4f4f4" if i % 2 == 0 else "#ffffff",
-                "border": "1px solid #ddd",
-                "borderRadius": "8px",
+                "backgroundColor": theme.BG_PANEL if i % 2 == 0 else theme.BG_PAGE,
+                "border": f"1px solid {theme.BORDER}",
             },
         ))
     return [header] + cards
@@ -319,12 +345,12 @@ def build_comparison_figure(msg_df: pd.DataFrame, loc_df: pd.DataFrame,
     fig.add_trace(go.Heatmap(
         z=ratio_matrix.values, x=periods, y=front_positions,
         customdata=np.dstack([msg_matrix.values, np.tile(fronts, (len(periods), 1)).T]),
-        colorscale="YlOrRd", colorbar=dict(title="Ratio", len=heatmap_weight, y=heatmap_weight / 2),
+        colorscale=theme.HEAT_SCALE_HEATMAP,
+        colorbar=dict(title="Ratio", len=heatmap_weight, y=heatmap_weight / 2, showticklabels=False),
         hovertemplate=f"%{{customdata[1]}} — {period_label}%{{x|{date_fmt}}}<br>Ratio: %{{z:.1f}}<br>"
                       "Messages: %{customdata[0]:.0f}<extra></extra>",
     ), row=3, col=1)
-    fig.update_yaxes(tickmode="array", tickvals=front_positions, ticktext=fronts,
-                      title_text="Front", row=3, col=1)
+    fig.update_yaxes(tickmode="array", tickvals=front_positions, ticktext=fronts, row=3, col=1)
 
     # Message count encoded as a thin vertical line centered on each cell,
     # height scaled (sqrt, for perceptual fairness) and capped so it can't
@@ -338,7 +364,7 @@ def build_comparison_figure(msg_df: pd.DataFrame, loc_df: pd.DataFrame,
         for period, half_height in zip(periods, half_heights):
             line_x += [period, period, None]
             line_y += [i - half_height, i + half_height, None]
-    fig.add_scatter(x=line_x, y=line_y, mode="lines", line=dict(color="black", width=1.5),
+    fig.add_scatter(x=line_x, y=line_y, mode="lines", line=dict(color=theme.TEXT_PRIMARY, width=1.5),
                      showlegend=False, hoverinfo="skip", row=3, col=1)
 
     # fixedrange on every y-axis: box-drag zoom is horizontal-only (the time
@@ -346,7 +372,7 @@ def build_comparison_figure(msg_df: pd.DataFrame, loc_df: pd.DataFrame,
     # from also rescaling the bars/heatmap vertically).
     fig.update_yaxes(title_text="Messages", fixedrange=True, row=1, col=1)
     fig.update_yaxes(title_text="Locations", fixedrange=True, row=2, col=1)
-    fig.update_yaxes(title_text="Front", fixedrange=True, row=3, col=1)
+    fig.update_yaxes(fixedrange=True, row=3, col=1)
     fig.update_layout(
         barmode="stack",
         template="plotly_white",
@@ -354,7 +380,7 @@ def build_comparison_figure(msg_df: pd.DataFrame, loc_df: pd.DataFrame,
         margin=dict(l=100, r=20, t=50, b=40),
         legend_title_text="Front",
     )
-    return fig
+    return _apply_theme(fig)
 
 
 def build_front_facet_figure(msg_df: pd.DataFrame, loc_df: pd.DataFrame, start, end,
@@ -428,9 +454,9 @@ def build_front_facet_figure(msg_df: pd.DataFrame, loc_df: pd.DataFrame, start, 
         template="plotly_white",
         height=280 * rows,
         margin=dict(l=60, r=20, t=50, b=40),
-        coloraxis=dict(colorscale="Viridis", reversescale=True, showscale=False),
+        coloraxis=dict(colorscale=theme.HEAT_SCALE, showscale=False),
     )
-    return fig
+    return _apply_theme(fig)
 
 
 def _bounds_zoom_center(lats, lons, width_px=900, height_px=650):
@@ -489,7 +515,7 @@ def build_map_figure(df: pd.DataFrame):
 
     fig = px.scatter_mapbox(
         location_counts, lat="lat", lon="lon", color="messages",
-        color_continuous_scale="YlOrRd",
+        color_continuous_scale=theme.HEAT_SCALE,
         range_color=[0, color_cap],
         hover_name="name_he",
         hover_data={"name_en": True, "name_ar": True, "messages": True, "lat": False, "lon": False},
@@ -510,9 +536,9 @@ def build_map_figure(df: pd.DataFrame):
     fig.add_trace(outline)
     fig.data = (fig.data[-1],) + fig.data[:-1]
 
-    fig.update_layout(margin=dict(l=0, r=0, t=10, b=0))
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
     fig.update_coloraxes(showscale=False)
-    return fig
+    return _apply_theme(fig)
 
 
 def _days_between(start, end) -> int:
@@ -539,7 +565,7 @@ def init_explore_dash(server):
     dash_app = Dash(
         server=server,
         url_base_pathname=URL_BASE,
-        title="Explore — Kesher",
+        title="Kesher - קשר",
     )
 
     # Full-history bounds/figures, cached per worker process and rebuilt only
@@ -609,7 +635,11 @@ def init_explore_dash(server):
         _refresh_view_state_if_stale()
         state = _view_state
         return html.Div(
-            style={"font-family": "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            # Monospace is the default here — only the title and section
+            # headers (H1/H2) opt back into the sans-serif body face;
+            # everything else (descriptions, captions, labels) reads as
+            # monospace "field report" data.
+            style={"font-family": theme.FONT_MONO,
                    "padding": "1.5rem", "maxWidth": "1200px", "margin": "0 auto"},
             children=[
                 html.Div(
@@ -617,7 +647,8 @@ def init_explore_dash(server):
                            "alignItems": "flex-start"},
                     children=[
                         html.Div([
-                            html.H1("Kesher - קשר", style={"fontSize": "1.7rem", "margin": "0"}),
+                            html.H1("Kesher - קשר",
+                                    style={"fontSize": "1.7rem", "margin": "0", "fontFamily": theme.FONT_SANS}),
                             html.P(
                                 [
                                     "Mapping IDF Telegram messaging across six fronts since October 7th",
@@ -625,7 +656,7 @@ def init_explore_dash(server):
                                     html.Span(f"Last updated: {state['max_date'].strftime('%d %b %Y, %H:%M UTC')}",
                                               id="last-updated-text"),
                                 ],
-                                style={"fontSize": "0.85rem", "color": "#888", "margin": "0.25rem 0 0"},
+                                style={"fontSize": "0.85rem", "color": theme.TEXT_MUTED, "margin": "0.25rem 0 0"},
                             ),
                             # Polls the DB for the true latest message timestamp so this stays
                             # accurate across the hourly scraper sync, independent of how long
@@ -647,9 +678,9 @@ def init_explore_dash(server):
                                     [
                                         "All data comes from a single source: the IDF's official Telegram "
                                         "channel, in Hebrew. Messages are scraped, then matched against a "
-                                        "gazetteer of about 208 named locations across the six fronts to "
+                                        "table of about 208 named locations across the six fronts to "
                                         "assign coordinates. See ",
-                                        html.A("the full methodology", href="/methodology"),
+                                        html.A("the full methodology", href="/methodßology"),
                                         " for how this shapes what the data can and can't tell you.",
                                     ],
                                     style={"margin": "0 0 0.75rem"},
@@ -666,61 +697,90 @@ def init_explore_dash(server):
                     ],
                 ),
 
-                html.H2("Where messages are located", style={"fontSize": "1.2rem", "margin": "1.25rem 0 0.5rem"}),
+                html.Hr(style={"borderColor": theme.BORDER, "margin": "1.5rem 0 0"}),
+                html.H2("Where messages are located",
+                        style={"fontSize": "1.2rem", "margin": "1.25rem 0 0.5rem", "fontFamily": theme.FONT_SANS}),
                 html.P("One marker per location, coloured by total message count across the whole history. "
                        "Click a marker to see its messages.",
-                       style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+                       style={"fontSize": "0.85rem", "color": theme.TEXT_MUTED, "margin": "0.5rem 0 1rem"}),
                 html.Div(
                     style={"display": "flex", "gap": "1.25rem", "alignItems": "flex-start"},
                     children=[
-                        # n_clicks (rather than map-graph's own clickData alone) is what
-                        # lets the panel reset to the recent-messages default when the
-                        # user clicks empty map space — Plotly's clickData only fires for
-                        # clicks that land on an actual marker, but a plain click event
-                        # still bubbles up through this wrapping div regardless of what
-                        # (if anything) it hit.
-                        html.Div(id="map-click-area", n_clicks=0,
-                                 style={"flex": "2", "minWidth": "0"},
-                                 children=dcc.Graph(id="map-graph", figure=state["map_figure"],
-                                                     style={"height": "650px"},
-                                                     config={"scrollZoom": True})),
+                        # Corner brackets live on this outer, unrounded wrapper rather than
+                        # the map frame itself — same reason as the messages panel below: a
+                        # border-radius on the same element the brackets sit on clips the
+                        # square ::before/::after accents to the rounded corner. (Corners are
+                        # square now, not rounded, but the brackets still need an unclipped
+                        # element to sit flush against.)
+                        html.Div(
+                            className="corner-brackets",
+                            style={"flex": "2", "minWidth": "0", "padding": "6px"},
+                            # n_clicks (rather than map-graph's own clickData alone) is what
+                            # lets the panel reset to the recent-messages default when the
+                            # user clicks empty map space — Plotly's clickData only fires for
+                            # clicks that land on an actual marker, but a plain click event
+                            # still bubbles up through this wrapping div regardless of what
+                            # (if anything) it hit.
+                            children=html.Div(
+                                id="map-click-area", n_clicks=0,
+                                className="contour-texture",
+                                style={"border": f"1px solid {theme.BORDER}", "overflow": "hidden"},
+                                children=dcc.Graph(id="map-graph", figure=state["map_figure"],
+                                                    style={"height": "650px"},
+                                                    config={"scrollZoom": True}),
+                            ),
+                        ),
                         dcc.Loading(
                             type="circle",
                             parent_style={"flex": "1", "minWidth": "280px", "maxWidth": "380px"},
+                            # Corner brackets live on this outer, unrounded wrapper rather
+                            # than the scrollable card itself — a border-radius + overflow:
+                            # auto on the same element clips square-cornered ::before/::after
+                            # accents to the rounded corner, hiding them entirely.
                             children=html.Div(
-                                id="location-messages-panel",
-                                children=build_messages_panel(
-                                    "5 most recent messages", load_recent_messages(5)),
-                                style={"height": "650px", "overflowY": "auto",
-                                       "border": "1px solid #ddd", "borderRadius": "8px",
-                                       "padding": "1rem"},
+                                className="corner-brackets",
+                                style={"padding": "6px"},
+                                children=html.Div(
+                                    id="location-messages-panel",
+                                    children=build_messages_panel(
+                                        "5 most recent messages", load_recent_messages(5)),
+                                    # border-box: this div's own 1rem padding + 1px border would
+                                    # otherwise add on top of "height" (content-box default),
+                                    # making it 32px+2px taller than the map's matching frame.
+                                    # 652px = the map Graph's 650px + its own 1px border on each
+                                    # side, so both frames total the exact same rendered height.
+                                    style={"height": "652px", "overflowY": "auto", "boxSizing": "border-box",
+                                           "border": f"1px solid {theme.BORDER}",
+                                           "backgroundColor": theme.BG_PANEL, "padding": "1rem"},
+                                ),
                             ),
                         ),
                     ],
                 ),
 
-                html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
-                html.H2("Front comparison", style={"fontSize": "1.2rem"}),
+                html.Hr(style={"borderColor": theme.BORDER, "margin": "2.5rem 0 1.5rem"}),
+                html.H2("Front comparison", style={"fontSize": "1.2rem", "fontFamily": theme.FONT_SANS}),
                 html.P("Messages, distinct locations, and the messages-per-location ratio for every "
                        "front, all on the same time axis — the time frame above and the slider below "
                        "both drive (and follow) zooming/panning on the chart.",
-                       style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+                       style={"fontSize": "0.85rem", "color": theme.TEXT_MUTED, "margin": "0.5rem 0 1rem"}),
 
                 # Sticky once scrolled past the map above (its normal in-flow spot
                 # is right here); scrolling back up past that spot un-sticks it,
                 # so it only overlays content once the map itself is out of view.
                 html.Div(
                     style={"position": "sticky", "top": "0", "zIndex": "10",
-                           "backgroundColor": "#fff", "paddingTop": "0.5rem",
-                           "paddingBottom": "0.75rem", "borderBottom": "1px solid #eee"},
+                           "backgroundColor": theme.BG_PAGE, "paddingTop": "0.5rem",
+                           "paddingBottom": "0.75rem", "borderBottom": f"1px solid {theme.BORDER}"},
                     children=[
                         html.Div(
                             style={"display": "flex", "gap": "2rem", "flexWrap": "wrap",
                                    "alignItems": "center", "margin": "0 0 0.5rem"},
                             children=[
                                 html.Div([
-                                    html.Label("Time frame", style={"display": "block",
-                                                                    "fontSize": "0.8rem", "color": "#888"}),
+                                    html.Label("Time frame",
+                                               style={"display": "block",
+                                                      "fontSize": "0.8rem", "color": theme.TEXT_MUTED}),
                                     html.Div(
                                         style={"display": "flex", "gap": "0.5rem", "alignItems": "center"},
                                         children=[
@@ -732,21 +792,30 @@ def init_explore_dash(server):
                                                 end_date=state["max_date"].date(),
                                                 display_format="D MMM YYYY",
                                             ),
+                                            # 34px matches the date-picker input box's own
+                                            # rendered height exactly (measured), so the two
+                                            # controls line up instead of the button sitting
+                                            # shorter than the picker next to it.
                                             html.Button("Reset", id="reset-date-range",
-                                                        style={"fontSize": "0.8rem", "padding": "0.35rem 0.6rem"}),
+                                                        style={"fontSize": "0.8rem", "padding": "0 0.6rem",
+                                                               "height": "34px",
+                                                               "border": f"1px solid {theme.BORDER}",
+                                                               "backgroundColor": theme.BG_PANEL,
+                                                               "color": theme.TEXT_PRIMARY}),
                                         ],
                                     ),
                                 ]),
                                 html.Div([
-                                    html.Label("Granularity", style={"display": "block",
-                                                                     "fontSize": "0.8rem", "color": "#888"}),
+                                    html.Label("Granularity",
+                                               style={"display": "block",
+                                                      "fontSize": "0.8rem", "color": theme.TEXT_MUTED}),
                                     dcc.RadioItems(
                                         id="granularity",
                                         options=[{"label": g.title(), "value": g}
                                                  for g in ("day", "week", "month")],
                                         value="week",
                                         inline=True,
-                                        labelStyle={"marginRight": "0.75rem"},
+                                        labelStyle={"marginRight": "0.75rem", "fontSize": "0.8rem"},
                                     ),
                                 ]),
                             ],
@@ -780,12 +849,13 @@ def init_explore_dash(server):
                 ),
                 dcc.Graph(id="comparison-graph", figure=state["comparison_figure"]),
 
-                html.Hr(style={"borderColor": "#333", "margin": "2.5rem 0 1.5rem"}),
-                html.H2("Messages vs. locations per front-period", style={"fontSize": "1.2rem"}),
+                html.Hr(style={"borderColor": theme.BORDER, "margin": "2.5rem 0 1.5rem"}),
+                html.H2("Messages vs. locations per front-period",
+                        style={"fontSize": "1.2rem", "fontFamily": theme.FONT_SANS}),
                 html.P("Each dot is one period (day/week/month, per the granularity control above) "
                        "for that front within the selected time frame; colour marks when it occurred. "
                        "Axes are fixed to the same scale across fronts for direct comparison.",
-                       style={"fontSize": "0.85rem", "color": "#888", "margin": "0.5rem 0 1rem"}),
+                       style={"fontSize": "0.85rem", "color": theme.TEXT_MUTED, "margin": "0.5rem 0 1rem"}),
                 _plot_info("Distinct locations vs. messages, per front-period",
                            "One dot per period (day, week, or month, per the granularity control) for "
                            "that front. X axis is distinct locations mentioned, y axis is message count. "
@@ -794,17 +864,17 @@ def init_explore_dash(server):
                 dcc.Graph(id="front-facet-scatter", figure=state["front_facet_figure"]),
 
                 html.Footer(
-                    style={"marginTop": "3rem", "paddingTop": "1rem", "borderTop": "1px solid #ddd",
-                           "textAlign": "center", "fontSize": "0.75rem", "color": "#888"},
+                    style={"marginTop": "3rem", "paddingTop": "1rem", "borderTop": f"1px solid {theme.BORDER}",
+                           "textAlign": "center", "fontSize": "0.75rem", "color": theme.TEXT_MUTED},
                     children=[
                         html.A("Methodology", href="/methodology",
-                               style={"color": "#888", "textDecoration": "none"}),
+                               style={"color": theme.ACCENT_OLIVE, "textDecoration": "none"}),
                         html.Span(" · ", style={"margin": "0 0.4rem"}),
                         html.Span([
                             "Built by ",
                             html.A("Benjamin Saadia", href="https://www.linkedin.com/in/benjaminsaadia/",
                                    target="_blank", rel="noopener noreferrer",
-                                   style={"color": "#888", "textDecoration": "none"}),
+                                   style={"color": theme.ACCENT_OLIVE, "textDecoration": "none"}),
                         ]),
                     ],
                 ),

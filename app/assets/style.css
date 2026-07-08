@@ -1,3 +1,20 @@
+:root {
+    --bg-page: #F5EFE1;
+    --bg-panel: #FBF7EC;
+    --border: #C9BFA0;
+    --text-primary: #2E2C24;
+    --text-muted: #6B6650;
+    --accent-olive: #5B6B44;
+    --accent-olive-muted: #98A17E;
+    --accent-rust: #A85C32;
+    --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+}
+
 /* Header info icon + hover popover (desktop-only, no touch handling) */
 .info-icon-wrapper {
     position: relative;
@@ -9,8 +26,8 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background-color: #333;
-    color: #fff;
+    background-color: var(--text-primary);
+    color: var(--bg-panel);
     font-family: Georgia, "Times New Roman", serif;
     font-style: italic;
     font-weight: 700;
@@ -34,14 +51,12 @@
     top: calc(100% + 0.5rem);
     left: 0;
     width: 380px;
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border);
     padding: 0.9rem 1rem;
     font-size: 0.85rem;
     line-height: 1.5;
-    color: #333;
+    color: var(--text-primary);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.18s ease;
@@ -69,6 +84,123 @@
 }
 
 .info-popover a {
-    color: #333;
+    color: var(--accent-olive);
     font-weight: 600;
+}
+
+/* Monospace utility for timestamps, coordinates, and other small data
+   labels — a "field report" feel for anything data-like, as opposed to
+   prose. */
+.mono {
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+}
+
+/* Corner-bracket accent: two short olive strokes on opposing corners,
+   evoking a viewfinder/crosshair framing motif. Applied sparingly — only
+   to the messages panel — via ::before/::after so it composes cleanly with
+   a container's own hairline border and border-radius. */
+.corner-brackets {
+    position: relative;
+}
+.corner-brackets::before,
+.corner-brackets::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+}
+.corner-brackets::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid var(--accent-olive);
+    border-left: 2px solid var(--accent-olive);
+}
+.corner-brackets::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid var(--accent-olive);
+    border-right: 2px solid var(--accent-olive);
+}
+
+/* dcc.RangeSlider's actual rendered classes in this Dash version are
+   "dash-slider-*" (a Radix-based implementation), not the older rc-slider
+   library's class names — its default track/range/thumb color is a bright
+   purple that clashes with the parchment/olive theme, so it's re-themed to
+   a desaturated olive (less saturated than the primary accent, so it reads
+   as UI chrome rather than a call-to-action color). !important guards
+   against the component's own inline styles winning by specificity. */
+.dash-slider-track {
+    background-color: var(--border) !important;
+}
+.dash-slider-range {
+    background-color: var(--accent-olive-muted) !important;
+}
+.dash-slider-thumb {
+    background-color: var(--bg-panel) !important;
+    border: 2px solid var(--accent-olive-muted) !important;
+}
+.dash-slider-dot {
+    border-color: var(--accent-olive-muted) !important;
+}
+.dash-slider-dot-outside-selection {
+    border-color: var(--border) !important;
+}
+.dash-slider-mark {
+    color: var(--text-muted) !important;
+}
+.dash-slider-mark-outside-selection {
+    color: var(--text-muted) !important;
+}
+/* The raw day-offset value bubbles (e.g. "0" / "1004") next to each handle
+   aren't meaningful to users — the quarterly date marks below the slider
+   already label the timeline, so the tooltip bubbles are hidden entirely. */
+.dash-slider-tooltip {
+    display: none !important;
+}
+
+/* Native radio/checkbox inputs (dcc.RadioItems' granularity control) pick up
+   the browser/OS accent color by default (a bright purple here) — overridden
+   to the same muted olive as the slider so every selection control in the
+   toolbar reads as one consistent accent. */
+input[type="radio"],
+input[type="checkbox"] {
+    accent-color: var(--accent-olive-muted);
+}
+
+/* dcc.DatePickerRange ("time frame" selector) — themed to match the Reset
+   button next to it (hairline border, panel background, primary text)
+   instead of the component's default white/blue-bordered look. */
+.dash-datepicker-input-wrapper {
+    border: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    background-color: var(--bg-panel) !important;
+}
+.dash-datepicker-input {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+    font-family: var(--font-mono);
+    font-size: 0.8rem !important;
+}
+
+/* The RangeSlider's editable min/max number inputs (raw day-offset values,
+   e.g. "0" / "1004") flanking the track aren't meaningful to users — same
+   reasoning as hiding the drag tooltip above; the quarterly marks already
+   label the timeline. */
+.dash-range-slider-input {
+    display: none !important;
+}
+
+/* Faint contour-line texture, applied only behind the map container — not
+   behind dense tables or text-heavy panels. */
+.contour-texture {
+    background-color: var(--bg-page);
+    background-image: repeating-radial-gradient(
+        circle at 20% 20%,
+        rgba(91, 107, 68, 0.05) 0px,
+        rgba(91, 107, 68, 0.05) 1px,
+        transparent 1px,
+        transparent 26px
+    );
 }
