@@ -14,7 +14,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from dash import Dash, dcc, html, Input, Output, Patch
+from dash import Dash, dcc, html, ctx, Input, Output, Patch
 from dash.exceptions import PreventUpdate
 from sqlalchemy import func, select
 from sqlalchemy.orm import sessionmaker
@@ -178,16 +178,40 @@ def load_messages_for_location(location_id: int) -> pd.DataFrame:
     return df
 
 
-def build_location_messages_panel(location_name: str, messages_df: pd.DataFrame):
-    """Render one location's messages as visually separated cards (bordered,
+def load_recent_messages(limit: int = 5) -> pd.DataFrame:
+    """The N most recent messages overall, regardless of location — the
+    map sidebar's default content, shown on page load and after clicking
+    empty map space (i.e. whenever no location is selected).
+
+    Excludes messages with blank text: media (e.g. photos) is often posted
+    as a caption-less part of a multi-item album sharing one timestamp with
+    its siblings, which would otherwise surface as several back-to-back
+    empty, identically-timestamped cards.
+    """
+    query = (
+        select(Message.id, Message.timestamp, Message.text, Message.channel)
+        .where(func.length(func.trim(Message.text)) > 0)
+        .order_by(Message.timestamp.desc())
+        .limit(limit)
+    )
+    with Session() as session:
+        rows = session.execute(query).all()
+
+    df = pd.DataFrame(rows, columns=["id", "timestamp", "text", "channel"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    return df
+
+
+def build_messages_panel(title: str, messages_df: pd.DataFrame):
+    """Render a list of messages as visually separated cards (bordered,
     alternating background) so consecutive messages don't blur together.
     ``messages_df`` is expected most-recent-first (as returned by
-    ``load_messages_for_location``); order is preserved, not re-sorted."""
-    header = html.H3(f"{location_name} ({len(messages_df)} messages)",
-                      style={"fontSize": "1rem", "margin": "0 0 0.75rem"})
+    ``load_messages_for_location``/``load_recent_messages``); order is
+    preserved, not re-sorted."""
+    header = html.H3(title, style={"fontSize": "1rem", "margin": "0 0 0.75rem"})
 
     if messages_df.empty:
-        return [header, html.P("No messages found for this location.",
+        return [header, html.P("No messages found.",
                                 style={"color": "#888", "fontSize": "0.85rem"})]
 
     cards = []
@@ -649,16 +673,24 @@ def init_explore_dash(server):
                 html.Div(
                     style={"display": "flex", "gap": "1.25rem", "alignItems": "flex-start"},
                     children=[
-                        dcc.Graph(id="map-graph", figure=state["map_figure"],
-                                  style={"height": "650px", "flex": "2", "minWidth": "0"},
-                                  config={"scrollZoom": True}),
+                        # n_clicks (rather than map-graph's own clickData alone) is what
+                        # lets the panel reset to the recent-messages default when the
+                        # user clicks empty map space — Plotly's clickData only fires for
+                        # clicks that land on an actual marker, but a plain click event
+                        # still bubbles up through this wrapping div regardless of what
+                        # (if anything) it hit.
+                        html.Div(id="map-click-area", n_clicks=0,
+                                 style={"flex": "2", "minWidth": "0"},
+                                 children=dcc.Graph(id="map-graph", figure=state["map_figure"],
+                                                     style={"height": "650px"},
+                                                     config={"scrollZoom": True})),
                         dcc.Loading(
                             type="circle",
                             parent_style={"flex": "1", "minWidth": "280px", "maxWidth": "380px"},
                             children=html.Div(
                                 id="location-messages-panel",
-                                children=html.P("Click a marker to see messages for that location.",
-                                                 style={"color": "#888", "fontSize": "0.85rem"}),
+                                children=build_messages_panel(
+                                    "5 most recent messages", load_recent_messages(5)),
                                 style={"height": "650px", "overflowY": "auto",
                                        "border": "1px solid #ddd", "borderRadius": "8px",
                                        "padding": "1rem"},
@@ -795,16 +827,22 @@ def init_explore_dash(server):
     @dash_app.callback(
         Output("location-messages-panel", "children"),
         Input("map-graph", "clickData"),
+        Input("map-click-area", "n_clicks"),
     )
-    def show_location_messages(click_data):
-        if not click_data or not click_data.get("points"):
-            return html.P("Click a marker to see messages for that location.",
-                           style={"color": "#888", "fontSize": "0.85rem"})
+    def show_location_messages(click_data, _n_clicks):
+        # Plotly only fires clickData when the click actually lands on a
+        # marker; clicking empty map space leaves clickData unchanged, so
+        # the surrounding div's n_clicks (which bubbles up from *any* click,
+        # marker or not) is what triggers this callback instead. Only treat
+        # it as a marker selection when clickData itself was the trigger.
+        if ctx.triggered_id == "map-graph" and click_data and click_data.get("points"):
+            point = click_data["points"][0]
+            location_id = point["customdata"][0]
+            location_name = point.get("hovertext") or f"Location {location_id}"
+            messages = load_messages_for_location(location_id)
+            return build_messages_panel(f"{location_name} ({len(messages)} messages)", messages)
 
-        point = click_data["points"][0]
-        location_id = point["customdata"][0]
-        location_name = point.get("hovertext") or f"Location {location_id}"
-        return build_location_messages_panel(location_name, load_messages_for_location(location_id))
+        return build_messages_panel("5 most recent messages", load_recent_messages(5))
 
     @dash_app.callback(
         Output("comparison-graph", "figure"),
