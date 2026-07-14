@@ -680,7 +680,7 @@ def init_explore_dash(server):
                                         "channel, in Hebrew. Messages are scraped, then matched against a "
                                         "table of about 208 named locations across the six fronts to "
                                         "assign coordinates. See ",
-                                        html.A("the full methodology", href="/methodßology"),
+                                        html.A("the full methodology", href="/methodology"),
                                         " for how this shapes what the data can and can't tell you.",
                                     ],
                                     style={"margin": "0 0 0.75rem"},
