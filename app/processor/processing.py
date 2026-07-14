@@ -21,13 +21,19 @@ ACTIVITY_TAGS_PATH = os.path.join("scrap", "gazetteer", "activity_tags.csv")
 # rather than being baked into the strings here.
 COMPOUND_EXCLUSIONS = {
     'עזה': ['רצועת', 'אוגדת', 'חטיבת', 'מחוז', 'נפת', 'עיריית', 'עוטף'],
+    'חבלה': ['מטען', 'מטעני', 'חומר', 'חומרי', 'אמצעי', 'פעולת', 'פעולות', 'מעבדת', 'ציוד', 'לבנות', 'פתילי'],
+    'רמון': ['מצפה', 'נמל התעופה', 'שדה התעופה', 'בסיס', 'בסיס חיל האוויר'],
 }
 
 # Whole matched tokens to reject for specific names.
 # Needed when a prefix letter (ב/כ/ל/מ/ש/ה/ו) combined with the name
 # spells a common Hebrew word unrelated to the location.
 WORD_EXCLUSIONS = {
-    'צור': {'מצור'},   # מצור = siege, not "from Tyre"
+    'צור': {'מצור'},    # מצור = siege, not "from Tyre"
+    'חמד': {'מחמד'},    # מחמד = the name Mohammed, not "Hamad"
+    'ירון': {'מירון', 'לירון'},  # מירון = Meron; לירון = the first name "Liron"
+    'רמיה': {'כרמיה'},  # כרמיה = Karmia (an unrelated kibbutz)
+    'קטנה': {'הקטנה'},  # הקטנה = "the small one" (e.g. "עזה הקטנה"), not the village
 }
 
 

@@ -103,6 +103,54 @@ def test_multiple_locations_in_one_message(db_session, message_factory, location
     found_loc_ids = {res.location_id for res in results}
     assert {loc1.id, loc2.id} == found_loc_ids
 
+def test_prefix_fusion_word_exclusion(db_session, message_factory, location_factory):
+    # Location name is "חמד" (Hamad) but "מחמד" (the name Mohammed) should not
+    # match, since the ambiguous prefix letter מ fuses onto the name.
+    location_factory(name_he="חמד")
+    msg = message_factory(text="צה\"ל חיסל את מחמד קטמאש, בכיר בארגון הטרור חמאס.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_prefix_fusion_still_matches_genuine_mention(db_session, message_factory, location_factory):
+    # Genuine "Hamad" neighborhood mentions must still match.
+    loc = location_factory(name_he="חמד")
+    msg = message_factory(text="כוחות אוגדה 98 ממשיכים במבצע בשכונת \"חמד\" במערב חאן יונס.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(
+        select(MessageLocation).where(MessageLocation.message_id == msg.id)
+    ).scalars().all()
+    assert len(result) == 1
+    assert result[0].location_id == loc.id
+
+def test_compound_exclusion_common_noun(db_session, message_factory, location_factory):
+    # Location name is "חבלה" (Habla) but "מטען חבלה" (explosive charge) is a
+    # common noun phrase unrelated to the village.
+    location_factory(name_he="חבלה")
+    msg = message_factory(text="הלוחמים איתרו מספר מטעני חבלה בשטח.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_compound_exclusion_still_matches_genuine_mention(db_session, message_factory, location_factory):
+    # Genuine "Habla" village mentions must still match.
+    loc = location_factory(name_he="חבלה")
+    msg = message_factory(text="כוחות צה\"ל פעלו הלילה בכפר חבלה שבחטיבת אפרים.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(
+        select(MessageLocation).where(MessageLocation.message_id == msg.id)
+    ).scalars().all()
+    assert len(result) == 1
+    assert result[0].location_id == loc.id
+
 def test_performance_of_find_locations_in_message(db_session, message_factory, location_factory):
     """
     Measures and prints the performance of processing a batch of messages.
