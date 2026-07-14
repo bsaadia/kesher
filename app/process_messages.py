@@ -35,8 +35,12 @@ with Session(engine) as session:
     messages = session.execute(select(Message)).scalars().all()
     print(f"Processing {len(messages)} messages...")
 
+    # Locations are queried once here instead of once per message (see
+    # process_messages() in processing.py) since re-querying the gazetteer
+    # table per message is pure overhead over a real network connection.
+    locations = session.execute(select(Location)).scalars().all()
     for i, message in enumerate(messages):
-        process_message(session, message)
+        process_message(session, message, locations=locations)
         if (i + 1) % 100 == 0:
             print(f"  {i + 1}/{len(messages)}")
 

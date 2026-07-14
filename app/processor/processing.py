@@ -139,16 +139,20 @@ def find_activities_in_message(db_session: Session, message: Message):
         db_session.commit()
 
 
-def find_locations_in_message(db_session: Session, message: Message):
+def find_locations_in_message(db_session: Session, message: Message, locations=None):
     """
     Finds locations from the gazetteer within the text of a single message
     using whole word matching, and creates associations in the database.
     Args:
         db_session: SQLAlchemy Session object.
         message: The Message object to process.
+        locations: Optional pre-fetched list of Location rows, so a caller
+            processing many messages in one run can query the table once
+            instead of once per message. Queried fresh if not provided.
     """
-    result = db_session.execute(select(Location))
-    locations = result.scalars().all()
+    if locations is None:
+        result = db_session.execute(select(Location))
+        locations = result.scalars().all()
 
     found_locations = set()  # Use a set to avoid duplicate location matches
     for loc in locations:
@@ -175,7 +179,7 @@ def find_locations_in_message(db_session: Session, message: Message):
     return found_locations
 
 
-def process_message(db_session: Session, message: Message):
+def process_message(db_session: Session, message: Message, locations=None):
     """
     Fully processes a single message: extracts locations, and — only when the
     message mentions at least one location — extracts activity categories.
@@ -183,8 +187,10 @@ def process_message(db_session: Session, message: Message):
     Args:
         db_session: SQLAlchemy Session object.
         message: The Message object to process.
+        locations: Optional pre-fetched list of Location rows; see
+            find_locations_in_message.
     """
-    found_locations = find_locations_in_message(db_session, message)
+    found_locations = find_locations_in_message(db_session, message, locations=locations)
     if found_locations:
         find_activities_in_message(db_session, message)
 
@@ -195,12 +201,17 @@ def process_messages(db_session: Session, messages):
     the corresponding associations for each. Used by both the full seed and the
     incremental update so the two paths share identical processing logic.
 
+    Locations are queried once for the whole batch rather than once per message,
+    since re-querying the (effectively static) gazetteer table per message is
+    pure overhead that gets expensive over a real network connection.
+
     Args:
         db_session: SQLAlchemy Session object.
         messages: Iterable of Message objects to process.
     """
+    locations = db_session.execute(select(Location)).scalars().all()
     for message in messages:
-        process_message(db_session, message)
+        process_message(db_session, message, locations=locations)
 
 
 # Initialize any resources needed by the processing system
