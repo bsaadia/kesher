@@ -151,6 +151,165 @@ def test_compound_exclusion_still_matches_genuine_mention(db_session, message_fa
     assert len(result) == 1
     assert result[0].location_id == loc.id
 
+def test_compound_after_exclusion_bare_name_collision(db_session, message_factory, location_factory):
+    # Location name "ירון" (Yaroun, Lebanon) bare-matches the first name of
+    # Maj. Gen. Yaron Finkelman with no prefix involved at all -- the
+    # WORD_EXCLUSIONS-style bare_word mechanism can't catch this since the
+    # matched surface form ("ירון") is legitimately the place name too; only
+    # the following word disambiguates it.
+    location_factory(name_he="ירון")
+    msg = message_factory(text="מפקד פיקוד הדרום, אלוף ירון פינקלמן, ערך סיור בגבול.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_compound_after_exclusion_still_matches_genuine_mention(db_session, message_factory, location_factory):
+    # Genuine "Yaroun" village mentions (no "פינקלמן" following) must still match.
+    loc = location_factory(name_he="ירון")
+    msg = message_factory(text="כוחות צה\"ל פעלו הלילה בכפר ירון שבדרום לבנון.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(
+        select(MessageLocation).where(MessageLocation.message_id == msg.id)
+    ).scalars().all()
+    assert len(result) == 1
+    assert result[0].location_id == loc.id
+
+def test_geresh_is_required_not_optional(db_session, message_factory, location_factory):
+    # Location name "ח'דר" (Khadar, with geresh) must not match the ordinary
+    # word "חדר" ("room") just because the geresh was dropped -- the old
+    # `.replace("'", "'?")` hack made the geresh optional, which is exactly
+    # what let this collision through.
+    location_factory(name_he="ח'דר")
+    msg = message_factory(text="עד למפגש המפתיע בחדר 303 בבה\"ד 1.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_geresh_variant_spellings_still_match(db_session, message_factory, location_factory):
+    # Genuine mentions must still match regardless of which visually-similar
+    # apostrophe/geresh character was typed (straight apostrophe, Hebrew
+    # geresh, or curly quote all mean the same thing here).
+    loc = location_factory(name_he="ח'דר")  # gazetteer CSV spells it with a straight apostrophe
+    for geresh_char in ["'", "׳", "’"]:
+        msg = message_factory(text=f"המחבל ח{geresh_char}דר אלשהאביה פיקד על מרחב הר דב.")
+        find_locations_in_message(db_session, msg)
+        result = db_session.execute(
+            select(MessageLocation).where(MessageLocation.message_id == msg.id)
+        ).scalars().all()
+        assert len(result) == 1, f"expected a match for geresh variant {geresh_char!r}"
+        assert result[0].location_id == loc.id
+
+def test_gershayim_does_not_fracture_acronym(db_session, message_factory, location_factory):
+    # Location name "חמא" (Hama, Syria) must not match inside חמא"ס ("Hamas")
+    # -- gershayim is not a \w character in Python's regex engine, so a plain
+    # \b treats it as a word boundary and lets "חמא" match as if it were a
+    # standalone bounded token.
+    location_factory(name_he="חמא")
+    msg = message_factory(text="הלחימה נגד ארגון הטרור חמא\"ס ברצועת עזה נמשכת.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_gershayim_genuine_standalone_mention_still_matches(db_session, message_factory, location_factory):
+    # A genuine standalone mention of the city (not embedded in an acronym)
+    # must still match.
+    loc = location_factory(name_he="חמא")
+    msg = message_factory(text="מטוסי קרב תקפו מטרות בסביבות העיר חמא שבסוריה.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(
+        select(MessageLocation).where(MessageLocation.message_id == msg.id)
+    ).scalars().all()
+    assert len(result) == 1
+    assert result[0].location_id == loc.id
+
+def test_single_letter_word_plus_quote_still_matches(db_session, message_factory, location_factory):
+    # "ה'עבסנים'" is the single-letter word "ה" (the) directly touching an
+    # opening scare-quote, not a multi-letter acronym fragment -- unlike
+    # חמא"ס, this must still match. A naive "mark = word boundary" fix (mark
+    # has a word character on only one side => not a boundary) would
+    # incorrectly treat ה+quote the same as an internal acronym marker and
+    # reject the match entirely.
+    loc = location_factory(name_he="עבסנים")
+    msg = message_factory(text="סיירת גבעתי נגד ה'עבסנים'. רגעי הקרב שטרם סופר.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(
+        select(MessageLocation).where(MessageLocation.message_id == msg.id)
+    ).scalars().all()
+    assert len(result) == 1
+    assert result[0].location_id == loc.id
+
+def test_compound_exclusion_extended_habla_triggers(db_session, message_factory, location_factory):
+    # The original COMPOUND_EXCLUSIONS list for "חבלה" missed several common
+    # preceding words found in a full sweep of the message table; these must
+    # now be excluded too.
+    location_factory(name_he="חבלה")
+    for text in [
+        "נשקים, מחסניות ומטעני נפץ וחבלה שהוטמנו בשטח.",
+        "כוחות החבלה של מג\"ב איו\"ש פעלו במקום.",
+        "עצרו 25 מחבלים ואיתרו מעבדות חבלה ואמל\"ח.",
+        "המנהרה הושמדה באמצעות חבלה מבוקרת.",
+    ]:
+        msg = message_factory(text=text)
+        find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_compound_before_and_after_exclusions_for_tzur(db_session, message_factory, location_factory):
+    # "צור" (Tyre, Lebanon) bare-matches several unrelated same-spelling
+    # places and an idiom; each needs its own compound exclusion.
+    location_factory(name_he="צור")
+    for text in [
+        "בקבוקי תבערה לעבר היישוב כרמי צור שבחטיבת עציון.",   # Karmei Tzur
+        "קפצו לפני זמן קצר לסלעית וצור יצחק.",                    # Tzur Yitzhak
+        "תת-אלוף (במיל') רמי צור חכם התראיין הבוקר.",             # a person's name
+        "מתבקש לצור קשר עם מוקד זה בהקדם.",                       # idiom "make contact"
+    ]:
+        msg = message_factory(text=text)
+        find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
+def test_compound_exclusions_still_match_genuine_tzur_mention(db_session, message_factory, location_factory):
+    loc = location_factory(name_he="צור")
+    msg = message_factory(text="צה\"ל תקף אתמול מטרות בפרברי העיר צור שבדרום לבנון.")
+
+    find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(
+        select(MessageLocation).where(MessageLocation.message_id == msg.id)
+    ).scalars().all()
+    assert len(result) == 1
+    assert result[0].location_id == loc.id
+
+def test_bare_word_exclusion_common_verb_and_noun(db_session, message_factory, location_factory):
+    # "דוחה" (Doha) and "סעדה" (Sa'dah) are both, in their bare/prefixed form,
+    # ordinary Hebrew words -- a verb and a noun respectively.
+    location_factory(name_he="דוחה")
+    location_factory(name_he="סעדה")
+    for text in [
+        "צה\"ל דוחה על הסף את הטענה שהועלתה בתקשורת.",
+        "כ-140,000 מנות הסעדה מחולקות מידי יום ברצועת עזה.",
+    ]:
+        msg = message_factory(text=text)
+        find_locations_in_message(db_session, msg)
+
+    result = db_session.execute(select(MessageLocation)).scalars().all()
+    assert len(result) == 0
+
 def test_performance_of_find_locations_in_message(db_session, message_factory, location_factory):
     """
     Measures and prints the performance of processing a batch of messages.

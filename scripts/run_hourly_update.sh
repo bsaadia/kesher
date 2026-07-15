@@ -1,6 +1,9 @@
 #!/bin/bash
 # Hourly production DB update: scrapes Telegram and writes new messages
-# directly to the Render production Postgres DB.
+# directly to the Render production Postgres DB, and -- if a local .env with
+# a DATABASE_URL is present -- also to the local dev Postgres in the same
+# run, so local never drifts out of sync with production between manual
+# gazetteer/matcher fixes.
 #
 # Run by launchd via ~/Library/LaunchAgents/com.tzahal-mapper.hourly-update.plist
 # Safe to also run by hand for testing: ./scripts/run_hourly_update.sh
@@ -9,6 +12,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$REPO_ROOT/.env.production"
+LOCAL_ENV_FILE="$REPO_ROOT/.env"
 PYTHON_BIN="$REPO_ROOT/venv/bin/python"
 LOCK_FILE="/tmp/tzahal-mapper-hourly-update.lock"
 LOG_DIR="$REPO_ROOT/logs"
@@ -44,6 +48,20 @@ set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
+
+# --- also target the local dev DB, without letting .env's other vars
+# (Telegram creds etc.) clobber the production values just sourced above ---
+if [ -f "$LOCAL_ENV_FILE" ]; then
+    # sed, not `grep -P`: macOS ships BSD grep, which has no -P (Perl regex) support.
+    LOCAL_DATABASE_URL="$(sed -n 's/^DATABASE_URL=//p' "$LOCAL_ENV_FILE" | head -1)"
+    if [ -n "$LOCAL_DATABASE_URL" ]; then
+        export LOCAL_DATABASE_URL
+    else
+        log "WARN: no DATABASE_URL found in $LOCAL_ENV_FILE; local DB will not be updated this run."
+    fi
+else
+    log "WARN: $LOCAL_ENV_FILE not found; local DB will not be updated this run."
+fi
 
 cd "$REPO_ROOT"
 

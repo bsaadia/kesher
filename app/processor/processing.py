@@ -9,32 +9,58 @@ from models.location import Location
 from models.activity import Activity
 from models.message import Message
 from models.associations import MessageLocation, MessageActivity
+from app.processor.hebrew_text import (
+    normalize_hebrew_punctuation,
+    BOUNDARY_START,
+    BOUNDARY_END,
+    CANONICAL_GERESH,
+)
 
 
 GAZETTEER_PATH = os.path.join("scrap", "gazetteer", "geocoded_locations_new.csv")
 ACTIVITY_TAGS_PATH = os.path.join("scrap", "gazetteer", "activity_tags.csv")
+EXCLUSIONS_PATH = os.path.join("scrap", "gazetteer", "match_exclusions.csv")
 
-# For ambiguous location names, exclude matches where the name is preceded
-# by one of these words (indicating a compound phrase, not the place itself).
-# Separator between the word and the name may be a space or a hyphen (e.g.
-# "עוטף-עזה"), so the trailing separator is added by the pattern builder
-# rather than being baked into the strings here.
-COMPOUND_EXCLUSIONS = {
-    'עזה': ['רצועת', 'אוגדת', 'חטיבת', 'מחוז', 'נפת', 'עיריית', 'עוטף'],
-    'חבלה': ['מטען', 'מטעני', 'חומר', 'חומרי', 'אמצעי', 'פעולת', 'פעולות', 'מעבדת', 'ציוד', 'לבנות', 'פתילי'],
-    'רמון': ['מצפה', 'נמל התעופה', 'שדה התעופה', 'בסיס', 'בסיס חיל האוויר'],
-}
+# Data-driven table of known false-match patterns for ambiguous gazetteer
+# names, keyed by name_he. Generated and maintained via
+# scripts/sweep_gazetteer_matches.py rather than hand-added as each collision
+# is separately discovered in production. Exclusion types:
+#   bare_word:        reject if the whole matched token equals this value
+#                      (e.g. "מחמד" fusing the מ prefix onto "חמד").
+#   compound_before:   reject if this word immediately precedes the match
+#                      (separated by a space or hyphen), e.g. "מטען חבלה".
+#   compound_after:    reject if this word immediately follows the match
+#                      (separated by a space), e.g. "ירון פינקלמן".
+#   require_geresh:    a geresh in this name is normally optional (messages
+#                      often drop it, e.g. "רדואן" for "רדואן׳"), but for a
+#                      handful of names dropping it spells a different real
+#                      word (ח'דר -> חדר, "room"); those names opt out of the
+#                      optional-geresh matching entirely.
+_exclusions_cache = None
 
-# Whole matched tokens to reject for specific names.
-# Needed when a prefix letter (ב/כ/ל/מ/ש/ה/ו) combined with the name
-# spells a common Hebrew word unrelated to the location.
-WORD_EXCLUSIONS = {
-    'צור': {'מצור'},    # מצור = siege, not "from Tyre"
-    'חמד': {'מחמד'},    # מחמד = the name Mohammed, not "Hamad"
-    'ירון': {'מירון', 'לירון'},  # מירון = Meron; לירון = the first name "Liron"
-    'רמיה': {'כרמיה'},  # כרמיה = Karmia (an unrelated kibbutz)
-    'קטנה': {'הקטנה'},  # הקטנה = "the small one" (e.g. "עזה הקטנה"), not the village
-}
+
+def _load_exclusions():
+    global _exclusions_cache
+    if _exclusions_cache is None:
+        word_excl = {}
+        compound_before = {}
+        compound_after = {}
+        require_geresh = set()
+        rows = pd.read_csv(EXCLUSIONS_PATH).to_dict(orient="records")
+        for row in rows:
+            name_he = row["name_he"]
+            kind = row["exclusion_type"]
+            value = row["value"]
+            if kind == "bare_word":
+                word_excl.setdefault(name_he, set()).add(value)
+            elif kind == "compound_before":
+                compound_before.setdefault(name_he, []).append(value)
+            elif kind == "compound_after":
+                compound_after.setdefault(name_he, []).append(value)
+            elif kind == "require_geresh":
+                require_geresh.add(name_he)
+        _exclusions_cache = (word_excl, compound_before, compound_after, require_geresh)
+    return _exclusions_cache
 
 
 def load_gazetteer_to_db_if_empty(db_session: Session):
@@ -139,6 +165,58 @@ def find_activities_in_message(db_session: Session, message: Message):
         db_session.commit()
 
 
+def iter_location_matches(loc: Location, normalized_text: str, exclusions=None):
+    """
+    Yields each non-excluded regex match of a single location's Hebrew name
+    within already-normalized message text (see normalize_hebrew_punctuation).
+
+    Factored out of find_locations_in_message so that
+    scripts/sweep_gazetteer_matches.py can audit exactly what the production
+    matcher would tag, without duplicating (and risking drifting from) the
+    matching logic itself.
+
+    Args:
+        loc: The Location row to match.
+        normalized_text: Message text already passed through
+            normalize_hebrew_punctuation.
+        exclusions: Optional (word_excl_map, compound_before_map,
+            compound_after_map, require_geresh_set) tuple as returned by
+            _load_exclusions(). Loaded fresh if not provided.
+    """
+    if not loc.name_he:
+        return
+
+    word_excl_map, compound_before_map, compound_after_map, require_geresh_set = (
+        exclusions or _load_exclusions()
+    )
+
+    name_pattern = re.escape(normalize_hebrew_punctuation(loc.name_he))
+    if loc.name_he not in require_geresh_set:
+        # A geresh is routinely dropped in casual writing (e.g. "רדואן" for
+        # "רדואן׳"); only names proven to collide on the geresh-dropped
+        # spelling (require_geresh) keep it mandatory -- see the note above
+        # _load_exclusions.
+        name_pattern = name_pattern.replace(re.escape(CANONICAL_GERESH), re.escape(CANONICAL_GERESH) + "?")
+    compound_before = compound_before_map.get(loc.name_he, [])
+    lookbehinds = ''.join(f'(?<!{re.escape(p)}[ \\-])' for p in compound_before)
+    pattern_he = lookbehinds + BOUNDARY_START + r"(?:[בכלמשהו])?" + name_pattern + BOUNDARY_END
+
+    word_excl = word_excl_map.get(loc.name_he, set())
+    compound_after = compound_after_map.get(loc.name_he, [])
+    after_pattern = None
+    if compound_after:
+        after_pattern = re.compile(
+            r'[ \-]+(?:' + '|'.join(re.escape(w) for w in compound_after) + r')\b'
+        )
+
+    for m in re.finditer(pattern_he, normalized_text):
+        if m.group() in word_excl:
+            continue
+        if after_pattern and after_pattern.match(normalized_text, m.end()):
+            continue
+        yield m
+
+
 def find_locations_in_message(db_session: Session, message: Message, locations=None):
     """
     Finds locations from the gazetteer within the text of a single message
@@ -154,19 +232,18 @@ def find_locations_in_message(db_session: Session, message: Message, locations=N
         result = db_session.execute(select(Location))
         locations = result.scalars().all()
 
+    exclusions = _load_exclusions()
+
+    # Normalized once per message: canonicalizes geresh/gershayim variants so
+    # a gazetteer name and the message text only need to agree on meaning,
+    # not on which visually-similar apostrophe/quote character was typed.
+    text = normalize_hebrew_punctuation(message.text)
+
     found_locations = set()  # Use a set to avoid duplicate location matches
     for loc in locations:
-        # Search for Hebrew name
-        if loc.name_he:
-            name_pattern = re.escape(loc.name_he).replace("'", "'?")
-            exclusions = COMPOUND_EXCLUSIONS.get(loc.name_he, [])
-            lookbehinds = ''.join(f'(?<!{re.escape(p)}[ \\-])' for p in exclusions)
-            pattern_he = lookbehinds + r"\b(?:[בכלמשהו])?" + name_pattern + r"\b"
-            word_excl = WORD_EXCLUSIONS.get(loc.name_he, set())
-            for m in re.finditer(pattern_he, message.text):
-                if m.group() not in word_excl:
-                    found_locations.add(loc)
-                    break
+        for _ in iter_location_matches(loc, text, exclusions=exclusions):
+            found_locations.add(loc)
+            break
 
     if not found_locations:
         return found_locations
