@@ -73,7 +73,7 @@ cd "$REPO_ROOT"
 RETRY_DELAYS=(5 15 30)
 attempt=1
 status=0
-if "$PYTHON_BIN" -m app.update_db >> "$LOG_FILE" 2>&1; then
+if "$PYTHON_BIN" -u -m app.update_db >> "$LOG_FILE" 2>&1; then
     log "OK hourly update finished"
 else
     status=$?
@@ -81,7 +81,7 @@ else
         attempt=$((attempt + 1))
         log "RETRY hourly update attempt $attempt after ${delay}s (previous exit status $status)"
         sleep "$delay"
-        if "$PYTHON_BIN" -m app.update_db >> "$LOG_FILE" 2>&1; then
+        if "$PYTHON_BIN" -u -m app.update_db >> "$LOG_FILE" 2>&1; then
             log "OK hourly update finished (attempt $attempt)"
             status=0
             break

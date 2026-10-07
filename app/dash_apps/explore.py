@@ -647,8 +647,12 @@ def init_explore_dash(server):
                            "alignItems": "flex-start"},
                     children=[
                         html.Div([
-                            html.H1("Kesher - קשר",
-                                    style={"fontSize": "1.7rem", "margin": "0", "fontFamily": theme.FONT_SANS}),
+                            html.Div([
+                                html.Img(src="/assets/kesher.svg",
+                                         style={"height": "1.7rem", "width": "1.7rem"}),
+                                html.H1("Kesher - קשר",
+                                        style={"fontSize": "1.7rem", "margin": "0", "fontFamily": theme.FONT_SANS}),
+                            ], style={"display": "flex", "alignItems": "center", "gap": "0.5rem"}),
                             html.P(
                                 [
                                     "Mapping Israel Defense Forces (IDF) Telegram messaging across six fronts since October 7th",

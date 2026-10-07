@@ -27,6 +27,13 @@ from sqlalchemy import func, select
 CHANNEL = "@idf_telegram"
 SEED_START_DATE = datetime(2023, 10, 7, tzinfo=timezone.utc)
 
+# Bounds a single attempt so a stalled network read (e.g. a Telegram TCP
+# connection that goes stale across sleep/wake and never errors, just never
+# responds) can't hang the process indefinitely. Without this, launchd's
+# StartCalendarInterval won't start a new instance while the old one is still
+# "running", so one stuck attempt silently blocks every subsequent hourly run.
+UPDATE_TIMEOUT_SECONDS = 900
+
 
 def _target_engines():
     """
@@ -116,4 +123,8 @@ async def update_database_to_current():
 
 
 if __name__ == "__main__":
-    asyncio.run(update_database_to_current())
+    try:
+        asyncio.run(asyncio.wait_for(update_database_to_current(), timeout=UPDATE_TIMEOUT_SECONDS))
+    except asyncio.TimeoutError:
+        print(f"ERROR: update timed out after {UPDATE_TIMEOUT_SECONDS}s", file=sys.stderr)
+        sys.exit(1)
