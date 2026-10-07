@@ -25,7 +25,7 @@ from models.location import Location
 from models.activity import Activity
 from models.associations import MessageLocation, MessageActivity
 
-from app import theme
+from app import config, theme
 
 # Own session factory so the dashboard stays decoupled from the request-scoped
 # g.db_session lifecycle in app/__init__.py.
@@ -76,7 +76,7 @@ _MAP_CENTER = {"lat": 31.5, "lon": 35.0}
 _EMPTY_MAP_FIG = px.scatter_mapbox(
     pd.DataFrame({"lat": [_MAP_CENTER["lat"]], "lon": [_MAP_CENTER["lon"]]}),
     lat="lat", lon="lon", zoom=5, center=_MAP_CENTER,
-    template="plotly_white", mapbox_style="carto-positron",
+    template="plotly_white", mapbox_style=config.map_style(),
 )
 _EMPTY_MAP_FIG.data = ()  # keep the basemap frame, drop the seed point
 _EMPTY_MAP_FIG.update_layout(
@@ -521,7 +521,7 @@ def build_map_figure(df: pd.DataFrame):
         hover_data={"name_en": True, "name_ar": True, "messages": True, "lat": False, "lon": False},
         custom_data=["location_id"],
         zoom=zoom, center=center,
-        template="plotly_white", mapbox_style="carto-positron",
+        template="plotly_white", mapbox_style=config.map_style(),
     )
     fig.update_traces(marker=dict(size=12))
 
